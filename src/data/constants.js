@@ -3,18 +3,19 @@ export const Bio = {
   roles: [
     "Full Stack Developer",
     "Data Scientist",
+    "DevOps",
     "UI/UX Designer",
     "Project Manager",
   ],
   summary:
     "Fresh graduate majoring in Computer Science who passionate about technology and programming.",
   description:
-    "a 21-year-old fresh graduate with a bachelor's degree in Informatics. Experienced with Frontend development (React), Backend development (Java, Python, NodeJS), UI/UX design, Git, Project Manager, Data Scientist and database management including MySQL, PostgreSQL, MongoDB, and Docker. I have a keen interest in exploring new technologies and approaches, and I thrive in dynamic and challenging environments. With a solid understanding of algorithms, data structures, clean architecture, and database management, I am equipped to tackle complex problems and contribute effectively to IT projects.",
+    "a 22-year-old fresh graduate with a bachelor's degree in Informatics. Experienced with Frontend development (React), Backend development (Java, Python, NodeJS), DevOps (Git, Docker, Jenkins, SonarQube, Kubernetes), UI/UX Design, Project Manager, Data Scientist and database management including MySQL, PostgreSQL,and MongoDB. I have a keen interest in exploring new technologies and approaches, and I thrive in dynamic and challenging environments. With a solid understanding of algorithms, data structures, clean architecture, and database management, I am equipped to tackle complex problems and contribute effectively to IT projects.",
   github: "https://github.com/mdafaardiansyah",
   email:
     "mailto:ardidafa21@gmail.com",
   resume:
-    "https://drive.google.com/file/d/1OpFBGVKIW96cISV9awgvDMRujIJ016A8/view?usp=sharing",
+    "https://drive.google.com/file/d/1L1WRo-UKQrfTwc2_ZR9UQUDoCRJ3bN_7/view?usp=sharing",
   linkedin: "https://www.linkedin.com/in/mdafaardiansyah",
   // twitter: "https://twitter.com/",
   insta: "https://www.instagram.com/ardidafa21/",
@@ -130,28 +131,113 @@ export const skills = [
     ],
   },
   {
-    title: "Others",
+    title: "DevOps",
     skills: [
       {
         name: "Git",
         image:
-          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/git/git-original.svg",
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/git/git-original.svg",
       },
       {
         name: "GitHub",
         image:
-          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original-wordmark.svg",
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original-wordmark.svg",
       },
       {
         name: "Docker",
         image:
-          "https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original-wordmark.svg",
+            "https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original-wordmark.svg",
       },
       {
-        name: "Netlify",
+        name: "Jenkins",
         image:
-          "https://seeklogo.com/images/N/netlify-logo-BD8F8A77E2-seeklogo.com.png",
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jenkins/jenkins-original.svg",
       },
+      {
+        name: "GitLab",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/gitlab/gitlab-original-wordmark.svg",
+      },
+      {
+        name: "BitBucket",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bitbucket/bitbucket-original-wordmark.svg",
+      },
+      {
+        name: "SonarQube",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sonarqube/sonarqube-original-wordmark.svg",
+      },
+      {
+        name: "ArgoCD",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/argocd/argocd-original-wordmark.svg",
+      },
+      {
+        name: "Terraform",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/terraform/terraform-original-wordmark.svg",
+      },
+      {
+        name: "GCP",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/googlecloud/googlecloud-original-wordmark.svg",
+      },
+      {
+        name: "Kubernetes",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kubernetes/kubernetes-original-wordmark.svg",
+      },
+      {
+        name: "Rancher",
+        image:
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rancher/rancher-original-wordmark.svg",
+      },
+    ],
+  },
+  {
+    title: "Quality Assurance",
+    skills: [
+      {
+        name: "Selenium",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/selenium/selenium-original.svg",
+      },
+      {
+        name: "Katalon",
+        image:
+          "https://upload.wikimedia.org/wikipedia/commons/e/e4/Katalon-logo-vector.svg",
+      },
+      {
+        name: "Playwrigth",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/playwright/playwright-original.svg",
+      },
+      {
+        name: "Cypress",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cypressio/cypressio-original.svg",
+      },
+      {
+        name: "JUnit",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/junit/junit-original.svg",
+      },
+      {
+        name: "Apache JMeter Maven",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/maven/maven-original.svg",
+      },
+      {
+        name: "Postman",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postman/postman-original.svg",
+      },
+    ],
+  },
+  {
+    title: "Others",
+    skills: [
       {
         name: "VS Code",
         image:
@@ -162,11 +248,11 @@ export const skills = [
         image:
           "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/insomnia/insomnia-original.svg",
       },
-      // {
-      //   name: "Tableau",
-      //   image:
-      //     "https://camo.githubusercontent.com/c205ecbe12500177d102169d97bc1c17c545155fdf5ec78c08d54ac53e5b38c1/68747470733a2f2f63646e2e776f726c64766563746f726c6f676f2e636f6d2f6c6f676f732f61646f62652d78642e737667",
-      // },
+      {
+        name: "Jetbrains Tools",
+        image:
+          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jetbrains/jetbrains-original.svg",
+      },
       {
         name: "Figma",
         image:
@@ -260,7 +346,9 @@ export const education = [
     school: "Universitas Pembangunan Nasional Veteran Jawa Timur",
     date: "Jun 2019 - Nov 2023",
     grade: "3.96 / 4.00",
-    desc: "",
+    desc: "Successfully achieved the highest GPA in the informatics department at the Graduation Ceremony" +
+        ", Became the Best MSIB Graduate at Bangkit Academy & MSIB Andromedia &" +
+        "Became a Finalist at Healthkaton 2023",
     degree: "Bachelor of Computer Science",
   },
   {
