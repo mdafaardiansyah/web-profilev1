@@ -583,6 +583,26 @@ export const projects = [
     category: "data analyst",
     github: "",
   },
+  {
+    id: 13,
+    title: "Gopatungan - UMKM Funding",
+    date: "Aug 2024 - Sep 2024",
+    description:
+        "Back End for Gopatungan",
+    image:
+        "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg",
+    tags: [
+      "Golang",
+      "Backend",
+      "Swagger",
+      "CI/CD",
+      "Gin",
+      "GORM",
+    ],
+    category: "web app",
+    github: "https://github.com/mdafaardiansyah/backend-gopatungan",
+    webapp: "https://api.gopatungan.glanze.site",
+  },
   // {
   //   id: 0,
   //   title: "Podstream",
