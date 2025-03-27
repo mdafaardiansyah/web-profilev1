@@ -100,13 +100,17 @@ pipeline {
             sh 'docker rmi $DOCKER_REGISTRY/$DOCKER_IMAGE:latest || true'
 
             // Send notification
-            emailext (
-                subject: "Build ${currentBuild.result}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: """Build ${currentBuild.result}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
-                Check console output at ${env.BUILD_URL}""",
-                to: 'ardidafa@gmail.com',
-                attachLog: true
-            )
+            // Send Discord notification
+            withCredentials([string(credentialsId: 'discord-notification', variable: 'DISCORD_WEBHOOK')]) {
+                discordSend(
+                    webhookURL: DISCORD_WEBHOOK,
+                    title: "Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                    description: "Job: ${env.JOB_NAME}\nStatus: ${currentBuild.currentResult}\nBuild URL: ${env.BUILD_URL}",
+                    link: env.BUILD_URL,
+                    result: currentBuild.currentResult,
+                    thumbnail: currentBuild.currentResult == 'SUCCESS' ? 'https://i.imgur.com/Gv81PxI.png' : 'https://i.imgur.com/0FqHSH6.png'
+                )
+            }
         }
         success {
             echo 'Deployment completed successfully!'
