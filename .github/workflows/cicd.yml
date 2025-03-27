@@ -1,0 +1,92 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_REGISTRY: ardidafa/portfolio
+      IMAGE_TAG: ${{ github.sha }}
+      NAMESPACE: portfolio
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./deployments/docker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/portfolio:${{ env.IMAGE_TAG }}
+            ${{ env.DOCKER_REGISTRY }}/portfolio:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/portfolio:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_REGISTRY }}/portfolio:buildcache,mode=max
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Set Kubernetes config
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Replace placeholder variables in deployment file
+          sed -i "s|\${DOCKER_REGISTRY}|${{ env.DOCKER_REGISTRY }}|g; s|\${IMAGE_TAG}|${{ env.IMAGE_TAG }}|g" deployments/kubernetes/base/deployment.yaml
+          
+          # Apply base resources
+          kubectl apply -f deployments/kubernetes/base/configmap.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f deployments/kubernetes/base/secret.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f deployments/kubernetes/base/deployment.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f deployments/kubernetes/base/service.yaml -n ${{ env.NAMESPACE }}
+          
+          # Apply environment-specific overlay
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            kubectl apply -k deployments/kubernetes/overlays/production -n ${{ env.NAMESPACE }}
+          else
+            kubectl apply -k deployments/kubernetes/overlays/development -n ${{ env.NAMESPACE }}
+          fi
+          
+          # Apply Istio resources
+          kubectl apply -f deployments/kubernetes/istio/gateway.yaml
+          kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
+          
+          # Verify deployment
+          kubectl rollout status deployment/portfolio -n ${{ env.NAMESPACE }}
+
+      - name: Deployment Status
+        run: |
+          echo "Deployment completed successfully!"
+          echo "Application URL: https://portfolio.glanze.site"
