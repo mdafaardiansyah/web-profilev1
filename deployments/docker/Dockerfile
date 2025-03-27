@@ -1,11 +1,14 @@
 # Build stage
-FROM node:18-alpine AS build
+FROM node:16-alpine as build
 
 WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
+
+# Set Node options untuk mengatasi masalah OpenSSL
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
 # Copy source files and build the application
 COPY . .

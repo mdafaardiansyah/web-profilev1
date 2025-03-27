@@ -6,6 +6,7 @@ pipeline {
         DOCKER_IMAGE = 'ardidafa/portfolio'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         KUBERNETES_NAMESPACE = 'portfolio'
+        NODE_OPTIONS = "--openssl-legacy-provider"
     }
 
     stages {
@@ -16,11 +17,12 @@ pipeline {
         }
 
         stage('Build React App') {
-            steps {
-                sh 'npm audit fix --force || true'
-                sh 'CI=false npm run build'
-            }
-        }
+                    steps {
+                        sh 'npm audit fix --force || true'
+
+                        sh 'export NODE_OPTIONS=--openssl-legacy-provider && CI=false npm run build'
+                    }
+                }
 
         stage('Security Scan') {
             steps {
