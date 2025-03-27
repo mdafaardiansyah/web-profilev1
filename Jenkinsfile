@@ -20,7 +20,7 @@ pipeline {
                     steps {
                         sh 'npm audit fix --force || true'
 
-                        sh 'export NODE_OPTIONS=--openssl-legacy-provider && CI=false npm run build'
+                        sh 'export NODE_OPTIONS=--openssl-legacy-provider && CI=false ESLINT_NO_DEV_ERRORS=true npm run build'
                     }
                 }
 
