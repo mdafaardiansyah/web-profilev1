@@ -48,35 +48,35 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
-                        sh """
-                            sed -i 's|\${IMAGE_TAG}|${IMAGE_TAG}|g' kubernetes/base/deployment.yaml
+                        sh '''
+                            sed -i "s|\${IMAGE_TAG}|${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
                             # Create namespace if it doesn't exist & enable Istio
                             kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
                             kubectl label namespace $KUBERNETES_NAMESPACE istio-injection=enabled --overwrite
 
                             # Create Docker registry secret if it doesn't exist
-                            kubectl create secret docker-registry docker-registry-secret \\
-                                --docker-server=$DOCKER_REGISTRY \\
-                                --docker-username=ardidafa \\
-                                --docker-password=$DOCKER_PAT \\
+                            kubectl create secret docker-registry docker-registry-secret \
+                                --docker-server=$DOCKER_REGISTRY \
+                                --docker-username=ardidafa \
+                                --docker-password=$DOCKER_PAT \
                                 -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
                             # Apply Kubernetes configurations
-                            kubectl apply -f kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f kubernetes/base/network-policy.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f kubernetes/base/resource-quota.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f kubernetes/base/dpa.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/network-policy.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/resource-quota.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/dpa.yaml -n $KUBERNETES_NAMESPACE
 
                             # Apply Istio & cert-manager resources
-                            kubectl apply -f kubernetes/cert-manager/cluster-issuer.yaml
-                            kubectl apply -f kubernetes/cert-manager/certificate.yaml
-                            kubectl apply -f kubernetes/istio/gateway.yaml
-                            kubectl apply -f kubernetes/istio/virtualservice.yaml
-                        """
+                            kubectl apply -f deployments/kubernetes/cert-manager/cluster-issuer.yaml
+                            kubectl apply -f deployments/kubernetes/cert-manager/certificate.yaml
+                            kubectl apply -f deployments/kubernetes/istio/gateway.yaml
+                            kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
+                        '''
 
                         // Verify deployment
                         sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
