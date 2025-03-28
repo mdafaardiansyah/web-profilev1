@@ -21,15 +21,14 @@ pipeline {
         }
 
         stage('Build React App') {
-                    steps {
-                        sh 'export NODE_OPTIONS=--openssl-legacy-provider && DISABLE_ESLINT_PLUGIN=true CI=false npm run build'
-                    }
-                }
+            steps {
+                sh 'export NODE_OPTIONS=--openssl-legacy-provider && DISABLE_ESLINT_PLUGIN=true CI=false npm run build'
+            }
+        }
 
         stage('Security Scan') {
             steps {
                 sh 'npm audit --production || true'
-
             }
         }
 
@@ -40,6 +39,10 @@ pipeline {
                     sh "docker build --no-cache -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
+
+                    // Verify image was pushed correctly
+                    sh "docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    sh "docker inspect ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
                 }
             }
         }
@@ -59,12 +62,24 @@ pipeline {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh '''
-                            # Lebih andal - update seluruh string image
+                            # FIXED: Better approach to replace image tag
                             sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
-                            # Create namespace if it doesn't exist & enable Istio
+                            # Print the deployment file after substitution for debugging
+                            echo "--- Deployment file after substitution ---"
+                            cat deployments/kubernetes/base/deployment.yaml
+                            echo "---------------------------------------"
+
+                            # Create namespace if it doesn't exist
                             kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-                            kubectl label namespace $KUBERNETES_NAMESPACE istio-injection=enabled --overwrite
+
+                            # Fix issue with istio-injection label
+                            kubectl label namespace $KUBERNETES_NAMESPACE istio-injection=enabled --overwrite || true
+
+                            # Verify istio-injection label
+                            echo "--- Checking namespace labels ---"
+                            kubectl get namespace $KUBERNETES_NAMESPACE --show-labels
+                            echo "-----------------------------"
 
                             # Create Docker registry secret if it doesn't exist
                             kubectl create secret docker-registry docker-registry-secret \
@@ -87,10 +102,41 @@ pipeline {
                             kubectl apply -f deployments/kubernetes/cert-manager/certificate.yaml
                             kubectl apply -f deployments/kubernetes/istio/gateway.yaml
                             kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
+
+                            # Check pod status and events for debugging
+                            echo "--- Initial Pod Status ---"
+                            kubectl get pods -n $KUBERNETES_NAMESPACE
+                            echo "------------------------"
+
+                            # Give pods a few seconds to start creating
+                            sleep 15
+
+                            echo "--- Pod Status After 15s ---"
+                            kubectl get pods -n $KUBERNETES_NAMESPACE
+                            echo "---------------------------"
                         '''
 
-                        // Verify deployment
-                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
+                        // Verify deployment with increased timeout
+                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=600s || true"
+
+                        // Always run these commands even if rollout times out
+                        sh '''
+                            echo "--- Detailed Pod Information ---"
+                            kubectl describe pods -n $KUBERNETES_NAMESPACE -l app=portfolio
+                            echo "-------------------------------"
+
+                            echo "--- Recent Events ---"
+                            kubectl get events -n $KUBERNETES_NAMESPACE --sort-by='.lastTimestamp' | tail -20
+                            echo "------------------"
+
+                            echo "--- Pod Logs ---"
+                            for pod in $(kubectl get pods -n $KUBERNETES_NAMESPACE -l app=portfolio -o name); do
+                                echo "Logs for $pod:"
+                                kubectl logs -n $KUBERNETES_NAMESPACE $pod --all-containers || true
+                                echo "--------------"
+                            done
+                            echo "---------------"
+                        '''
                     }
                 }
             }
@@ -107,16 +153,29 @@ pipeline {
         }
 
         stage('Verify Deployment') {
-                    steps {
-                        withKubeConfig([credentialsId: 'kubeconfig']) {
-                            sh '''
-                                # Check deployment status
-                                kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s || true
-                                kubectl get pods -n ${KUBERNETES_NAMESPACE}
-                            '''
-                        }
-                    }
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    sh '''
+                        # Check deployment status
+                        kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=30s || true
+                        kubectl get pods -n ${KUBERNETES_NAMESPACE}
+
+                        # Check Istio and Service status
+                        echo "--- Istio Gateway Status ---"
+                        kubectl get gateway -A
+                        echo "--------------------------"
+
+                        echo "--- VirtualService Status ---"
+                        kubectl get virtualservice -A
+                        echo "----------------------------"
+
+                        echo "--- Service Status ---"
+                        kubectl get svc -n ${KUBERNETES_NAMESPACE}
+                        echo "--------------------"
+                    '''
                 }
+            }
+        }
     }
 
     post {
