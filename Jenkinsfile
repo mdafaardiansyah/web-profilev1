@@ -47,12 +47,12 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Instal kubectl
                     sh '''
                         KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
                         curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
                         chmod +x kubectl
-                        sudo mv kubectl /usr/local/bin/ || sudo cp kubectl /usr/local/bin/
+
+                        mv kubectl /usr/local/bin/ || cp kubectl /usr/local/bin/
                     '''
                 }
 
