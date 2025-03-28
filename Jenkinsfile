@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS 18'
+    }
+
     environment {
         DOCKER_REGISTRY = 'docker.io'
         DOCKER_IMAGE = 'ardidafa/portfolio'
