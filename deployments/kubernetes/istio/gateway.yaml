@@ -1,7 +1,9 @@
+# Periksa Gateway
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: portfolio-gateway
+  namespace: portfolio
 spec:
   selector:
     istio: ingressgateway

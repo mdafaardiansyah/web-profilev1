@@ -1,26 +1,20 @@
-# Build stage
 FROM node:18-alpine AS build
 
 WORKDIR /app
-
-# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
-
-# Set Node options untuk mengatasi masalah OpenSSL
-ENV NODE_OPTIONS=--openssl-legacy-provider
-
-# Copy source files and build the application
 COPY . .
 RUN npm run build
 
-# Production stage
 FROM nginx:alpine
+# Buat direktori yang dibutuhkan dan berikan permissions yang tepat
+RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx && \
+    chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx /usr/share/nginx/html
 
-# Copy custom nginx config
-COPY deployments/docker/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy build files from build stage
+# Copy build files
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Expose port
@@ -29,10 +23,7 @@ EXPOSE 3000
 # Configure nginx to run on port 3000
 RUN sed -i 's/listen\s*80/listen 3000/g' /etc/nginx/conf.d/default.conf
 
-# Perbaiki permission untuk Nginx cache directory
-RUN mkdir -p /var/cache/nginx/client_temp && chown -R nginx:nginx /var/cache/nginx/client_temp
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost:3000/ || exit 1
+# Run as non-root user
+USER nginx
 
 CMD ["nginx", "-g", "daemon off;"]

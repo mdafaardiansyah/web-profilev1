@@ -51,7 +51,10 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
+        allowPrivilegeEscalation: false
+        runAsUser: 101  # nginx user ID
+        runAsGroup: 101  # nginx group ID
+        fsGroup: 101  # nginx group ID
+
       imagePullSecrets:
         - name: docker-registry-secret

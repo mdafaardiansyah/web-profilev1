@@ -4,8 +4,8 @@ metadata:
   name: portfolio-quota
 spec:
   hard:
-    requests.cpu: "1"
+    requests.cpu: "2"
     requests.memory: 2Gi
-    limits.cpu: "4"
+    limits.cpu: "6"
     limits.memory: 4Gi
     pods: "5"

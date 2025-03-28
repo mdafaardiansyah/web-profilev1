@@ -1,7 +1,9 @@
-apiVersion: networking.istio.io/v1beta1
+# Periksa VirtualService
+apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: portfolio
+  namespace: portfolio
 spec:
   hosts:
     - "portfolio.glanze.site"
@@ -13,20 +15,6 @@ spec:
             prefix: /
       route:
         - destination:
-            host: portfolio
+            host: portfolio.portfolio.svc.cluster.local  # FQDN service
             port:
               number: 80
-      retries:
-        attempts: 3
-        perTryTimeout: 2s
-      timeout: 5s
-      corsPolicy:
-        allowOrigins:
-          - exact: "https://portfolio.glanze.site"
-        allowMethods:
-          - GET
-          - POST
-          - OPTIONS
-        allowHeaders:
-          - content-type
-        maxAge: "24h"
