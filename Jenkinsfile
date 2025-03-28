@@ -46,40 +46,41 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig']) {
-                    // Update image tag in deployment
-                    sh """
-                        sed -i 's|\${IMAGE_TAG}|${IMAGE_TAG}|g' kubernetes/base/deployment.yaml
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
+                        sh """
+                            sed -i 's|\${IMAGE_TAG}|${IMAGE_TAG}|g' kubernetes/base/deployment.yaml
 
-                        # Create namespace if it doesn't exist & enable Istio
-                        kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-                        kubectl label namespace $KUBERNETES_NAMESPACE istio-injection=enabled --overwrite
+                            # Create namespace if it doesn't exist & enable Istio
+                            kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+                            kubectl label namespace $KUBERNETES_NAMESPACE istio-injection=enabled --overwrite
 
-                        # Create Docker registry secret if it doesn't exist
-                        kubectl create secret docker-registry docker-registry-secret \\
-                            --docker-server=$DOCKER_REGISTRY \\
-                            --docker-username=$DOCKER_USERNAME \\
-                            --docker-password=$DOCKER_PASSWORD \\
-                            -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+                            # Create Docker registry secret if it doesn't exist
+                            kubectl create secret docker-registry docker-registry-secret \\
+                                --docker-server=$DOCKER_REGISTRY \\
+                                --docker-username=ardidafa \\
+                                --docker-password=$DOCKER_PAT \\
+                                -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-                        # Apply Kubernetes configurations
-                        kubectl apply -f kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
-                        kubectl apply -f kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
-                        kubectl apply -f kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
-                        kubectl apply -f kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
-                        kubectl apply -f kubernetes/base/network-policy.yaml -n $KUBERNETES_NAMESPACE
-                        kubectl apply -f kubernetes/base/resource-quota.yaml -n $KUBERNETES_NAMESPACE
-                        kubectl apply -f kubernetes/base/dpa.yaml -n $KUBERNETES_NAMESPACE
+                            # Apply Kubernetes configurations
+                            kubectl apply -f kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f kubernetes/base/network-policy.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f kubernetes/base/resource-quota.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f kubernetes/base/dpa.yaml -n $KUBERNETES_NAMESPACE
 
-                        # Apply Istio & cert-manager resources
-                        kubectl apply -f kubernetes/cert-manager/cluster-issuer.yaml
-                        kubectl apply -f kubernetes/cert-manager/certificate.yaml
-                        kubectl apply -f kubernetes/istio/gateway.yaml
-                        kubectl apply -f kubernetes/istio/virtualservice.yaml
-                    """
+                            # Apply Istio & cert-manager resources
+                            kubectl apply -f kubernetes/cert-manager/cluster-issuer.yaml
+                            kubectl apply -f kubernetes/cert-manager/certificate.yaml
+                            kubectl apply -f kubernetes/istio/gateway.yaml
+                            kubectl apply -f kubernetes/istio/virtualservice.yaml
+                        """
 
-                    // Verify deployment
-                    sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
+                        // Verify deployment
+                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
+                    }
                 }
             }
         }
