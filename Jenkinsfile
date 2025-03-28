@@ -79,7 +79,7 @@ pipeline {
                             kubectl apply -f deployments/kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
                             kubectl apply -f deployments/kubernetes/base/network-policy.yaml -n $KUBERNETES_NAMESPACE
                             kubectl apply -f deployments/kubernetes/base/resource-quota.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/dpa.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/pdb.yaml -n $KUBERNETES_NAMESPACE
 
                             # Apply Istio & cert-manager resources
                             kubectl apply -f deployments/kubernetes/cert-manager/cluster-issuer.yaml
