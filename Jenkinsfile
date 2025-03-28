@@ -32,12 +32,10 @@ pipeline {
         stage('Build & Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh """
-                        echo \${DOCKER_PASSWORD} | docker login -u \${DOCKER_USERNAME} --password-stdin
-                        docker build -t \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:\${IMAGE_TAG} -t \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile .
-                        docker push \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:\${IMAGE_TAG}
-                        docker push \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:latest
-                    """
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
                 }
             }
         }
