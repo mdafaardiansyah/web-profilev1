@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: portfolio
-          image: docker.io/ardidafa/portfolio:latest
+          image: docker.io/ardidafa/portfolio:47
           ports:
             - containerPort: 3000
               name: http
@@ -50,11 +50,12 @@ spec:
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 101  # nginx user ID
+            runAsNonRoot: true
       securityContext:
-        allowPrivilegeEscalation: false
-        runAsUser: 101  # nginx user ID
-        runAsGroup: 101  # nginx group ID
         fsGroup: 101  # nginx group ID
-
+        runAsGroup: 101  # nginx group ID
       imagePullSecrets:
         - name: docker-registry-secret
