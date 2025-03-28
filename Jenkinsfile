@@ -59,7 +59,8 @@ pipeline {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh '''
-                            sed -i "s|\${IMAGE_TAG}|${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
+                            # Lebih andal - update seluruh string image
+                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
                             # Create namespace if it doesn't exist & enable Istio
                             kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
