@@ -18,8 +18,6 @@ pipeline {
 
         stage('Build React App') {
                     steps {
-                        sh 'find src -name "*.js" -exec sed -i "1i import React from \\"react\\";" {} \\; || true'
-
                         sh 'export NODE_OPTIONS=--openssl-legacy-provider && DISABLE_ESLINT_PLUGIN=true CI=false npm run build'
                     }
                 }
