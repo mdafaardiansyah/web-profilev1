@@ -82,7 +82,17 @@ pipeline {
 
                             # Apply Istio & cert-manager resources
                             kubectl apply -f deployments/kubernetes/cert-manager/cluster-issuer.yaml
-                            kubectl appl
+                            kubectl apply -f deployments/kubernetes/cert-manager/certificate.yaml
+                            kubectl apply -f deployments/kubernetes/istio/gateway.yaml
+                            kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
+                        '''
+
+                        // Verify deployment
+                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
+                    }
+                }
+            }
+        }
 
         stage('Smoke Test') {
             steps {
