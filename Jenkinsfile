@@ -104,6 +104,9 @@ pipeline {
                             kubectl apply -f deployments/kubernetes/istio/gateway.yaml
                             kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
 
+                            chmod +x setup-istio-forwarding.sh
+                            sudo ./setup-istio-forwarding.sh
+
                             # Check pod status and events for debugging
                             echo "--- Initial Pod Status ---"
                             kubectl get pods -n $KUBERNETES_NAMESPACE
