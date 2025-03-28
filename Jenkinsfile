@@ -31,7 +31,7 @@ pipeline {
 
         stage('Build & Push Docker Image') {
             steps {
-                sh 'sudo systemctl start docker || true'
+                sh 'systemctl start docker || true'
 
                 withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                     sh """
