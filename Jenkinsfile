@@ -31,14 +31,12 @@ pipeline {
 
         stage('Build & Push Docker Image') {
             steps {
-                sh 'systemctl start docker || true'
-
                 withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                     sh """
-                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                        docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:latest -f deployments/docker/Dockerfile .
-                        docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
-                        docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:latest
+                        echo \${DOCKER_PASSWORD} | docker login -u \${DOCKER_USERNAME} --password-stdin
+                        docker build -t \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:\${IMAGE_TAG} -t \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile .
+                        docker push \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:\${IMAGE_TAG}
+                        docker push \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:latest
                     """
                 }
             }
