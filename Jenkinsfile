@@ -90,6 +90,7 @@ pipeline {
 
                             # Apply Kubernetes configurations
                             kubectl apply -f deployments/kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base/namespace.yaml -n $KUBERNETES_NAMESPACE
                             kubectl apply -f deployments/kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
                             kubectl apply -f deployments/kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
                             kubectl apply -f deployments/kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
@@ -117,7 +118,7 @@ pipeline {
                         '''
 
                         // Verify deployment with increased timeout
-                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=600s || true"
+                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=100s || true"
 
                         // Always run these commands even if rollout times out
                         sh '''

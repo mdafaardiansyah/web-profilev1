@@ -52,9 +52,12 @@ spec:
             periodSeconds: 20
           # Container-level security context
           securityContext:
+            allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 101  # nginx user ID
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 101  # nginx user ID
         fsGroup: 101  # nginx group ID
       imagePullSecrets:
         - name: docker-registry-secret
