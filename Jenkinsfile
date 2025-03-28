@@ -46,6 +46,15 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
+                script {
+                    // Instal kubectl
+                    sh '''
+                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        chmod +x kubectl
+                        mv kubectl /usr/local/bin/
+                    '''
+                }
+
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh '''
@@ -73,17 +82,7 @@ pipeline {
 
                             # Apply Istio & cert-manager resources
                             kubectl apply -f deployments/kubernetes/cert-manager/cluster-issuer.yaml
-                            kubectl apply -f deployments/kubernetes/cert-manager/certificate.yaml
-                            kubectl apply -f deployments/kubernetes/istio/gateway.yaml
-                            kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
-                        '''
-
-                        // Verify deployment
-                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
-                    }
-                }
-            }
-        }
+                            kubectl appl
 
         stage('Smoke Test') {
             steps {
