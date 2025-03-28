@@ -63,7 +63,7 @@ pipeline {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh '''
                             # FIXED: Better approach to replace image tag
-                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
+                            ssed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:$IMAGE_TAG|g" deployments/kubernetes/base/deployment.yaml
 
                             # Print the deployment file after substitution for debugging
                             echo "--- Deployment file after substitution ---"
