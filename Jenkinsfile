@@ -49,9 +49,10 @@ pipeline {
                 script {
                     // Instal kubectl
                     sh '''
-                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+                        curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
                         chmod +x kubectl
-                        mv kubectl /usr/local/bin/
+                        sudo mv kubectl /usr/local/bin/ || sudo cp kubectl /usr/local/bin/
                     '''
                 }
 
