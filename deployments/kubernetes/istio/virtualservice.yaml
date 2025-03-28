@@ -1,4 +1,4 @@
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: portfolio
@@ -20,13 +20,13 @@ spec:
         attempts: 3
         perTryTimeout: 2s
       timeout: 5s
-  corsPolicy:
-    allowOrigins:
-      - exact: https://portfolio.glanze.site
-    allowMethods:
-      - GET
-      - POST
-      - OPTIONS
-    allowHeaders:
-      - content-type
-    maxAge: "24h"
+      corsPolicy:
+        allowOrigins:
+          - "https://portfolio.glanze.site"
+        allowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        allowHeaders:
+          - content-type
+        maxAge: "24h"
