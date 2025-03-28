@@ -18,7 +18,7 @@ RUN npm run build
 FROM nginx:alpine
 
 RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx && \
-    chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx /usr/share/nginx/html
+    chmod -R 777 /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx /usr/share/nginx/html
 
 # Copy custom nginx config
 COPY deployments/docker/nginx.conf /etc/nginx/conf.d/default.conf
