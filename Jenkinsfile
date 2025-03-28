@@ -20,11 +20,6 @@ pipeline {
                     steps {
                         sh 'npm audit fix --force || true'
 
-                        sh '''
-                            find src -name "*.js" -exec sed -i '1s/^/import React from "react";\\\n/' {} \\;
-                            find src -name "*.jsx" -exec sed -i '1s/^/import React from "react";\\\n/' {} \\;
-                        '''
-
                         sh 'export NODE_OPTIONS=--openssl-legacy-provider && CI=false ESLINT_NO_DEV_ERRORS=true npm run build'
                     }
                 }
