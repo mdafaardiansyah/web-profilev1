@@ -36,7 +36,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                     sh """
                         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                        docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:latest -f docker/Dockerfile .
+                        docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:latest -f deployments/docker/Dockerfile .
                         docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
                         docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:latest
                     """
@@ -93,6 +93,18 @@ pipeline {
                 sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://portfolio.glanze.site || true'
             }
         }
+
+        stage('Verify Deployment') {
+                    steps {
+                        withKubeConfig([credentialsId: 'kubeconfig']) {
+                            sh '''
+                                # Check deployment status
+                                kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s || true
+                                kubectl get pods -n ${KUBERNETES_NAMESPACE}
+                            '''
+                        }
+                    }
+                }
     }
 
     post {
