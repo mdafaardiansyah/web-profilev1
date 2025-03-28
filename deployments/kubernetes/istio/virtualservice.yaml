@@ -22,7 +22,7 @@ spec:
       timeout: 5s
       corsPolicy:
         allowOrigins:
-          - "https://portfolio.glanze.site"
+          - exact: "https://portfolio.glanze.site"
         allowMethods:
           - GET
           - POST
