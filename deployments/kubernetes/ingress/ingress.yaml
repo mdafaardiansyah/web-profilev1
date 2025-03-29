@@ -1,26 +1,19 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
   name: portfolio
   namespace: portfolio
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`portfolio.glanze.site`)
+      kind: Rule
+      services:
+        - name: portfolio
+          port: 80
   tls:
-    - hosts:
-        - portfolio.glanze.site
-      secretName: portfolio-tls-cert
-  rules:
-    - host: portfolio.glanze.site
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: portfolio
-                port:
-                  number: 80
+    certResolver: le
+    domains:
+      - main: portfolio.glanze.site

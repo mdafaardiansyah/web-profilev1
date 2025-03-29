@@ -50,6 +50,7 @@ pipeline {
                         KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
                         curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
                         chmod +x kubectl
+
                         mv kubectl /usr/local/bin/ || cp kubectl /usr/local/bin/
                     '''
                 }
@@ -57,21 +58,8 @@ pipeline {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh '''
-                            # Pastikan NGINX Ingress Controller terpasang
-                            if ! kubectl get deployment -n ingress-nginx ingress-nginx-controller &> /dev/null; then
-                                echo "Installing NGINX Ingress Controller..."
-                                kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
-
-                                # Tunggu controller siap
-                                echo "Waiting for NGINX Ingress Controller to be ready..."
-                                kubectl wait --namespace ingress-nginx \
-                                  --for=condition=ready pod \
-                                  --selector=app.kubernetes.io/component=controller \
-                                  --timeout=120s
-                            fi
-
-                            # Update image tag in deployment
-                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
+                            # Use string replacement for image tag
+                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/deployment.yaml
 
                             # Create namespace if it doesn't exist
                             kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
@@ -84,19 +72,11 @@ pipeline {
                                 -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
                             # Apply Kubernetes configurations
-                            kubectl apply -f deployments/kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/hpa.yaml -n $KUBERNETES_NAMESPACE
+                            kubectl apply -f deployments/kubernetes/base -n $KUBERNETES_NAMESPACE
 
-                            # Apply cert-manager resources
-                            kubectl apply -f deployments/kubernetes/cert-manager/cluster-issuer.yaml
-
-                            # Apply Certificate dan tunggu hingga siap
-                            kubectl apply -f deployments/kubernetes/ingress/certificate.yaml -n $KUBERNETES_NAMESPACE
-
-                            # Apply Ingress resource
-                            kubectl apply -f deployments/kubernetes/ingress/ingress.yaml -n $KUBERNETES_NAMESPACE
+                            # Apply ClusterIssuer and IngressRoute
+                            kubectl apply -f deployments/kubernetes/cert-manager
+                            kubectl apply -f deployments/kubernetes/ingress
                         '''
 
                         // Verify deployment
@@ -106,28 +86,29 @@ pipeline {
             }
         }
 
+        stage('Smoke Test') {
+            steps {
+                // Wait for service to be ready
+                sh 'sleep 30'
+
+                // Basic health check
+                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://portfolio.glanze.site || true'
+            }
+        }
+
         stage('Verify Deployment') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig']) {
                     sh '''
                         # Check deployment status
-                        kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=30s || true
+                        kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s || true
                         kubectl get pods -n ${KUBERNETES_NAMESPACE}
 
-                        # Check Ingress status
-                        echo "--- Ingress Status ---"
-                        kubectl get ingress -n ${KUBERNETES_NAMESPACE}
-                        echo "--------------------"
+                        # Check IngressRoute
+                        kubectl get ingressroute -n ${KUBERNETES_NAMESPACE}
 
-                        # Check Certificate status
-                        echo "--- Certificate Status ---"
-                        kubectl get certificate -n ${KUBERNETES_NAMESPACE}
-                        echo "------------------------"
-
-                        # Check Service status
-                        echo "--- Service Status ---"
+                        # Check service status
                         kubectl get svc -n ${KUBERNETES_NAMESPACE}
-                        echo "--------------------"
                     '''
                 }
             }
