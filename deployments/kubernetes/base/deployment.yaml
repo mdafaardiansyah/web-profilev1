@@ -21,7 +21,6 @@ spec:
         app: portfolio
         version: v1
       annotations:
-        sidecar.istio.io/inject: "false"
         prometheus.io/scrape: "true"
         prometheus.io/port: "3000"
     spec:
@@ -51,14 +50,13 @@ spec:
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20
-          # Container-level security context
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 101  # nginx user ID
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101  # nginx user ID
-        fsGroup: 101  # nginx group ID
+        runAsUser: 101
+        fsGroup: 101
       imagePullSecrets:
         - name: docker-registry-secret

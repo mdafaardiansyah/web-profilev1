@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: portfolio
-  annotations:
-    sidecar.istio.io/proxyCPULimit: "500m"
-    sidecar.istio.io/proxyMemoryLimit: "256Mi"
-    sidecar.istio.io/proxyCPU: "100m"
-    sidecar.istio.io/proxyMemory: "128Mi"
