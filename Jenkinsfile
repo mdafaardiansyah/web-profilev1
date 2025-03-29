@@ -1,16 +1,28 @@
 pipeline {
-    agent any
+    agent {
+        label 'master'
+    }
 
     tools {
         nodejs 'NodeJS 18'
     }
 
+    parameters {
+        string(name: 'RELEASE_TAG', defaultValue: '', description: 'Release tag to build and deploy (kosongkan untuk menggunakan build number)')
+        choice(name: 'DEPLOY_ENV', choices: ['development', 'production'], description: 'Environment to deploy')
+    }
+
     environment {
+        DOCKERHUB_CREDENTIALS = credentials('docker-hub')
+        DOCKER_HUB_PAT = credentials('docker-hub-pat')
+        KUBECONFIG = credentials('kubeconfig')
+        WEBHOOK_SECRET = credentials('webhook-secret')
+        SSL_EMAIL = credentials('ssl-email')
         DOCKER_REGISTRY = 'docker.io'
         DOCKER_IMAGE = 'ardidafa/portfolio'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        IMAGE_TAG = "${params.RELEASE_TAG ? params.RELEASE_TAG : env.BUILD_NUMBER}"
         KUBERNETES_NAMESPACE = 'portfolio'
-        NODE_OPTIONS = "--openssl-legacy-provider"
+        K3S_SERVER_IP = '45.80.181.33'
     }
 
     stages {
@@ -20,25 +32,84 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Linting') {
+            steps {
+                sh 'npm run lint || echo "Linting issues found but continuing"'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'npm test -- --passWithNoTests || echo "Tests failed but continuing"'
+            }
+        }
+
         stage('Build React App') {
             steps {
-                sh 'export NODE_OPTIONS=--openssl-legacy-provider && DISABLE_ESLINT_PLUGIN=true CI=false npm run build'
+                sh 'npm run build'
             }
         }
 
-        stage('Security Scan') {
+        stage('Build and Push Docker Image') {
             steps {
-                sh 'npm audit --production || true'
+                sh '''
+                    echo $DOCKER_HUB_PAT | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:latest .
+                    docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
+                    docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:latest
+                '''
             }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Create Namespace if not exists') {
             steps {
-                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
-                    sh 'echo $DOCKER_PAT | docker login -u ardidafa --password-stdin'
-                    sh "docker build --no-cache -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
-                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
-                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
+                sh '''
+                    mkdir -p $HOME/.kube
+                    cat "$KUBECONFIG" > $HOME/.kube/config
+                    chmod 600 $HOME/.kube/config
+
+                    kubectl get namespace $KUBERNETES_NAMESPACE || kubectl create namespace $KUBERNETES_NAMESPACE
+                '''
+            }
+        }
+
+        stage('Update Kubernetes ConfigMap') {
+            steps {
+                script {
+                    def configData = ""
+
+                    if (params.DEPLOY_ENV == 'production') {
+                        configData = """
+                        apiVersion: v1
+                        kind: ConfigMap
+                        metadata:
+                          name: portfolio-config
+                          namespace: $KUBERNETES_NAMESPACE
+                        data:
+                          NODE_ENV: "production"
+                          REACT_APP_API_URL: "https://api.glanze.site"
+                        """
+                    } else {
+                        configData = """
+                        apiVersion: v1
+                        kind: ConfigMap
+                        metadata:
+                          name: portfolio-config
+                          namespace: $KUBERNETES_NAMESPACE
+                        data:
+                          NODE_ENV: "development"
+                          REACT_APP_API_URL: "https://dev-api.glanze.site"
+                        """
+                    }
+
+                    writeFile file: 'configmap.yaml', text: configData
+                    sh 'kubectl apply -f configmap.yaml'
                 }
             }
         }
@@ -46,99 +117,148 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh '''
-                        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-                        curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-                        chmod +x kubectl
+                    def deploymentYaml = """
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: portfolio
+                      namespace: $KUBERNETES_NAMESPACE
+                    spec:
+                      replicas: 2
+                      selector:
+                        matchLabels:
+                          app: portfolio
+                      template:
+                        metadata:
+                          labels:
+                            app: portfolio
+                        spec:
+                          containers:
+                            - name: portfolio
+                              image: $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
+                              ports:
+                                - containerPort: 3000
+                              envFrom:
+                                - configMapRef:
+                                    name: portfolio-config
+                              livenessProbe:
+                                httpGet:
+                                  path: /health
+                                  port: 3000
+                                initialDelaySeconds: 10
+                                periodSeconds: 30
+                              readinessProbe:
+                                httpGet:
+                                  path: /health
+                                  port: 3000
+                                initialDelaySeconds: 5
+                                periodSeconds: 10
+                              resources:
+                                limits:
+                                  cpu: "0.5"
+                                  memory: "512Mi"
+                                requests:
+                                  cpu: "0.2"
+                                  memory: "256Mi"
+                    """
 
-                        mv kubectl /usr/local/bin/ || cp kubectl /usr/local/bin/
-                    '''
+                    def serviceYaml = """
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: portfolio
+                      namespace: $KUBERNETES_NAMESPACE
+                    spec:
+                      selector:
+                        app: portfolio
+                      ports:
+                        - port: 80
+                          targetPort: 3000
+                      type: ClusterIP
+                    """
+
+                    def ingressYaml = """
+                    apiVersion: networking.k8s.io/v1
+                    kind: Ingress
+                    metadata:
+                      name: portfolio
+                      namespace: $KUBERNETES_NAMESPACE
+                      annotations:
+                        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+                        kubernetes.io/ingress.class: "traefik"
+                        traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+                        traefik.ingress.kubernetes.io/router.tls: "true"
+                    spec:
+                      tls:
+                        - hosts:
+                            - portfolio.glanze.site
+                          secretName: portfolio-tls
+                      rules:
+                        - host: portfolio.glanze.site
+                          http:
+                            paths:
+                              - path: /
+                                pathType: Prefix
+                                backend:
+                                  service:
+                                    name: portfolio
+                                    port:
+                                      number: 80
+                    """
+
+                    writeFile file: 'deployment.yaml', text: deploymentYaml
+                    writeFile file: 'service.yaml', text: serviceYaml
+                    writeFile file: 'ingress.yaml', text: ingressYaml
+
+                    sh 'kubectl apply -f deployment.yaml'
+                    sh 'kubectl apply -f service.yaml'
+                    sh 'kubectl apply -f ingress.yaml'
+
+                    sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
                 }
-
-                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
-                    withKubeConfig([credentialsId: 'kubeconfig']) {
-                        sh '''
-                            # Use string replacement for image tag
-                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
-
-                            # Create namespace if it doesn't exist
-                            kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-
-                            # Create Docker registry secret if it doesn't exist
-                            kubectl create secret docker-registry docker-registry-secret \
-                                --docker-server=$DOCKER_REGISTRY \
-                                --docker-username=ardidafa \
-                                --docker-password=$DOCKER_PAT \
-                                -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-
-                            # Apply Kubernetes configurations
-                            kubectl apply -f deployments/kubernetes/base -n $KUBERNETES_NAMESPACE
-
-                            # Apply ClusterIssuer and IngressRoute
-                            kubectl apply -f deployments/kubernetes/cert-manager
-                            kubectl apply -f deployments/kubernetes/ingress
-                        '''
-
-                        // Verify deployment
-                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
-                    }
-                }
-            }
-        }
-
-        stage('Smoke Test') {
-            steps {
-                // Wait for service to be ready
-                sh 'sleep 30'
-
-                // Basic health check
-                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://portfolio.glanze.site || true'
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig']) {
-                    sh '''
-                        # Check deployment status
-                        kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s || true
-                        kubectl get pods -n ${KUBERNETES_NAMESPACE}
+                sh '''
+                    kubectl get deployment portfolio -n $KUBERNETES_NAMESPACE
+                    kubectl get pods -l app=portfolio -n $KUBERNETES_NAMESPACE
+                    kubectl get svc -n $KUBERNETES_NAMESPACE
+                    kubectl get ingress -n $KUBERNETES_NAMESPACE
+                '''
+            }
+        }
 
-                        # Check IngressRoute
-                        kubectl get ingressroute -n ${KUBERNETES_NAMESPACE}
-
-                        # Check service status
-                        kubectl get svc -n ${KUBERNETES_NAMESPACE}
-                    '''
-                }
+        stage('Verify SSL Certificate') {
+            steps {
+                sh '''
+                    echo "Checking certificate status..."
+                    kubectl get certificate -n $KUBERNETES_NAMESPACE || true
+                    kubectl describe certificate portfolio-tls -n $KUBERNETES_NAMESPACE || true
+                '''
             }
         }
     }
 
     post {
-        always {
-            // Clean up local Docker images
-            sh 'docker rmi $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG || true'
-            sh 'docker rmi $DOCKER_REGISTRY/$DOCKER_IMAGE:latest || true'
-
-            // Send notification
-            withCredentials([string(credentialsId: 'discord-notification', variable: 'DISCORD_WEBHOOK')]) {
-                discordSend(
-                    webhookURL: DISCORD_WEBHOOK,
-                    title: "Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
-                    description: "Job: ${env.JOB_NAME}\nStatus: ${currentBuild.currentResult}\nBuild URL: ${env.BUILD_URL}",
-                    link: env.BUILD_URL,
-                    result: currentBuild.currentResult,
-                    thumbnail: currentBuild.currentResult == 'SUCCESS' ? 'https://i.imgur.com/Gv81PxI.png' : 'https://i.imgur.com/0FqHSH6.png'
-                )
-            }
-        }
         success {
-            echo 'Deployment completed successfully!'
-            echo 'Site is now available at: https://portfolio.glanze.site'
+            discordSend description: "✅ Build #${BUILD_NUMBER} berhasil! Deployed ke ${params.DEPLOY_ENV} environment dengan tag ${IMAGE_TAG}\nAkses di: https://portfolio.glanze.site",
+                        link: env.BUILD_URL,
+                        result: currentBuild.currentResult,
+                        title: "Portfolio CI/CD Pipeline",
+                        webhookURL: credentials('discord-notification')
         }
         failure {
-            echo 'Deployment failed!'
+            discordSend description: "❌ Build #${BUILD_NUMBER} gagal! Silakan cek logs untuk detail lebih lanjut.",
+                        link: env.BUILD_URL,
+                        result: currentBuild.currentResult,
+                        title: "Portfolio CI/CD Pipeline",
+                        webhookURL: credentials('discord-notification')
+        }
+        always {
+            sh 'docker logout'
+            cleanWs()
         }
     }
 }

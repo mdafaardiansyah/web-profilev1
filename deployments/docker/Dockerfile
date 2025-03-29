@@ -3,36 +3,27 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
-# Set Node options untuk mengatasi masalah OpenSSL
-ENV NODE_OPTIONS=--openssl-legacy-provider
-
-# Copy source files and build the application
 COPY . .
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# Production stage - using lightweight server instead of nginx
+FROM node:18-alpine
 
-RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx && \
-    chmod -R 777 /var/cache/nginx /var/run /var/log/nginx /var/lib/nginx /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom nginx config
-COPY deployments/docker/nginx.conf /etc/nginx/conf.d/default.conf
+# Install lightweight server
+RUN npm install -g serve
 
-# Copy build files from build stage
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy built assets from the build stage
+COPY --from=build /app/build /app/build
 
-# Expose port
+# Health check for kubernetes
+HEALTHCHECK --interval=30s --timeout=3s CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+
 EXPOSE 3000
 
-# Configure nginx to run on port 3000
-RUN sed -i 's/listen\s*80/listen 3000/g' /etc/nginx/conf.d/default.conf
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost:3000/ || exit 1
-
-CMD ["nginx", "-g", "daemon off;"]
+# Serve app with routing configuration for SPA
+CMD ["serve", "-s", "build", "-l", "3000", "--cors"]

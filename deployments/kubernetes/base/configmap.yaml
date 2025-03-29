@@ -5,4 +5,4 @@ metadata:
   namespace: portfolio
 data:
   NODE_ENV: "production"
-  PUBLIC_URL: "https://portfolio.glanze.site"
+  REACT_APP_API_URL: "https://api.glanze.site"
