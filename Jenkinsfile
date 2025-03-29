@@ -59,7 +59,7 @@ pipeline {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         sh '''
                             # Use string replacement for image tag
-                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/deployment.yaml
+                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
                             # Create namespace if it doesn't exist
                             kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
