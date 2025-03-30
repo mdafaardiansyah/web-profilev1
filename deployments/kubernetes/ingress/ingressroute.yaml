@@ -11,19 +11,7 @@ spec:
     - match: Host(`portfolio.glanze.site`)
       kind: Rule
       services:
-        - name: portfolio
+        - name: portfolio  # Ganti dengan 'dev-portfolio' jika menggunakan environment development
           port: 80
-      middlewares:
-        - name: redirect-https
   tls:
     certResolver: letsencrypt
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: redirect-https
-  namespace: portfolio
-spec:
-  redirectScheme:
-    scheme: https
-    permanent: true
