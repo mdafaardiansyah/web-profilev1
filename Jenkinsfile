@@ -130,6 +130,95 @@ CI=false
             }
         }
 
+        stage('Fix SSL Certificate Issues') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    script {
+                        // Hapus sertifikat yang ada
+                        sh '''
+                            # Hapus sertifikat yang bermasalah
+                            kubectl delete certificate portfolio-tls -n $KUBERNETES_NAMESPACE || true
+                            kubectl delete certificate portfolio-tls-cert -n $KUBERNETES_NAMESPACE || true
+                            kubectl delete secret portfolio-tls -n $KUBERNETES_NAMESPACE || true
+                            kubectl delete secret portfolio-tls-cert -n $KUBERNETES_NAMESPACE || true
+
+                            # Tunggu beberapa detik
+                            sleep 5
+                        '''
+
+                        // Buat Middleware untuk redirect HTTPS
+                        sh '''
+                            cat <<EOF | kubectl apply -f -
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: $KUBERNETES_NAMESPACE
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+EOF
+                        '''
+
+                        // Update ClusterIssuer
+                        sh '''
+                            cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ardidafa21@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: traefik
+EOF
+                        '''
+
+                        // Gunakan IngressRoute sebagai alternatif
+                        sh '''
+                            cat <<EOF | kubectl apply -f -
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: portfolio
+  namespace: $KUBERNETES_NAMESPACE
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`portfolio.glanze.site`)
+      kind: Rule
+      services:
+        - name: portfolio
+          port: 80
+  tls:
+    certResolver: letsencrypt
+EOF
+                        '''
+
+                        // Tunggu sertifikat dibuat
+                        sh 'sleep 30'
+
+                        // Periksa status sertifikat
+                        sh '''
+                            echo "Verifikasi status sertifikat..."
+                            kubectl get certificate -n $KUBERNETES_NAMESPACE || true
+                            kubectl get ingressroute -n $KUBERNETES_NAMESPACE
+                            kubectl get traefik -n $KUBERNETES_NAMESPACE || true
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Smoke Test') {
             steps {
                 // Wait for service to be ready
@@ -146,17 +235,35 @@ CI=false
                     kubectl get deployment portfolio -n $KUBERNETES_NAMESPACE
                     kubectl get pods -l app=portfolio -n $KUBERNETES_NAMESPACE
                     kubectl get svc -n $KUBERNETES_NAMESPACE
-                    kubectl get ingress -n $KUBERNETES_NAMESPACE
+                    kubectl get ingressroute -n $KUBERNETES_NAMESPACE
                 '''
             }
         }
 
-        stage('Verify SSL Certificate') {
+        stage('Debug SSL Certificate') {
             steps {
                 sh '''
-                    echo "Checking certificate status..."
-                    kubectl get certificate -n $KUBERNETES_NAMESPACE || true
-                    kubectl describe certificate portfolio-tls -n $KUBERNETES_NAMESPACE || true
+                    echo "Debugging SSL certificate issues..."
+
+                    # Periksa status cert-manager
+                    echo "Memeriksa status cert-manager..."
+                    kubectl get pods -n cert-manager
+
+                    # Periksa log cert-manager (hanya 10 baris)
+                    echo "Memeriksa log cert-manager controller..."
+                    kubectl logs -n cert-manager -l app=cert-manager --tail=10 || true
+
+                    # Periksa challenges dari cert-manager
+                    echo "Memeriksa challenges..."
+                    kubectl get challenges -A || true
+
+                    # Periksa log pod traefik
+                    echo "Memeriksa log traefik..."
+                    kubectl logs -n kube-system -l app.kubernetes.io/name=traefik --tail=10 || true
+
+                    # Periksa ingressroutes di Traefik
+                    echo "Memeriksa ingressroutes..."
+                    kubectl get ingressroutes -A || true
                 '''
             }
         }
