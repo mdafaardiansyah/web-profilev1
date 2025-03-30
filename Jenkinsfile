@@ -112,7 +112,7 @@ CI=false
                             # Create namespace
                             kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-                            # Create Docker registry secret
+                            # Create Docker registry secret222
                             kubectl create secret docker-registry docker-registry-secret \
                                 --docker-server=$DOCKER_REGISTRY \
                                 --docker-username=ardidafa \
