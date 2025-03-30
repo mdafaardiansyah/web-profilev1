@@ -120,13 +120,7 @@ CI=false
                                 -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
                             # Apply semua kecuali ingress dulu
-                            kubectl apply -f deployments/kubernetes/base/configmap.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/deployment.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/service.yaml -n $KUBERNETES_NAMESPACE
-                            kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml -n $KUBERNETES_NAMESPACE
-
-                            # Coba apply ingress dengan --validate=false
-                            kubectl apply -f deployments/kubernetes/base/ingress.yaml -n $KUBERNETES_NAMESPACE --validate=false || true
+                            kubectl apply -f deployments/kubernetes/base
                         '''
 
                         // Verify deployment
