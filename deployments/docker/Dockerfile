@@ -12,9 +12,6 @@ RUN npm ci --no-audit || npm install --no-audit
 # Copy the rest of the source code
 COPY . .
 
-# Add .eslintrc.js to skip warnings
-COPY .eslintrc.js ./
-
 # Build with ESLint warnings disabled
 RUN export NODE_OPTIONS=--openssl-legacy-provider && \
     DISABLE_ESLINT_PLUGIN=true CI=false npm run build

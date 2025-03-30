@@ -91,6 +91,8 @@ CI=false
             steps {
                 sh '''
                     echo $DOCKER_HUB_PAT | docker login -u ardidafa --password-stdin
+                    sh 'ls -la'
+                    sh 'ls -la deployments/docker'
                     sh "docker build --no-cache -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
@@ -130,10 +132,6 @@ CI=false
 
                             # Apply Kubernetes configurations
                             kubectl apply -f deployments/kubernetes/base -n $KUBERNETES_NAMESPACE
-
-                            # Apply ClusterIssuer and IngressRoute
-                            kubectl apply -f deployments/kubernetes/cert-manager
-                            kubectl apply -f deployments/kubernetes/ingress
                         '''
 
                         // Verify deployment
