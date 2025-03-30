@@ -91,8 +91,8 @@ CI=false
             steps {
                 sh '''
                     echo $DOCKER_HUB_PAT | docker login -u ardidafa --password-stdin
-                    sh 'ls -la'
-                    sh 'ls -la deployments/docker'
+                    sh 'echo $PATH'
+                    sh 'echo "test"'
                     sh "docker build --no-cache -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
