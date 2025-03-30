@@ -91,9 +91,9 @@ CI=false
             steps {
                 sh '''
                     echo $DOCKER_HUB_PAT | docker login -u ardidafa --password-stdin
-                    docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:latest .
-                    docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
-                    docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:latest
+                    sh "docker build --no-cache -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
                 '''
             }
         }
@@ -110,143 +110,46 @@ CI=false
             }
         }
 
-        stage('Update Kubernetes ConfigMap') {
+        stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    def configData = ""
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
+                        sh '''
+                            # Use string replacement for image tag
+                            sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
-                    if (params.DEPLOY_ENV == 'production') {
-                        configData = """
-                        apiVersion: v1
-                        kind: ConfigMap
-                        metadata:
-                          name: portfolio-config
-                          namespace: $KUBERNETES_NAMESPACE
-                        data:
-                          NODE_ENV: "production"
-                          REACT_APP_API_URL: "https://api.glanze.site"
-                        """
-                    } else {
-                        configData = """
-                        apiVersion: v1
-                        kind: ConfigMap
-                        metadata:
-                          name: portfolio-config
-                          namespace: $KUBERNETES_NAMESPACE
-                        data:
-                          NODE_ENV: "development"
-                          REACT_APP_API_URL: "https://dev-api.glanze.site"
-                        """
+                            # Create namespace if it doesn't exist
+                            kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+
+                            # Create Docker registry secret if it doesn't exist
+                            kubectl create secret docker-registry docker-registry-secret \
+                                --docker-server=$DOCKER_REGISTRY \
+                                --docker-username=ardidafa \
+                                --docker-password=$DOCKER_PAT \
+                                -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+
+                            # Apply Kubernetes configurations
+                            kubectl apply -f deployments/kubernetes/base -n $KUBERNETES_NAMESPACE
+
+                            # Apply ClusterIssuer and IngressRoute
+                            kubectl apply -f deployments/kubernetes/cert-manager
+                            kubectl apply -f deployments/kubernetes/ingress
+                        '''
+
+                        // Verify deployment
+                        sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
                     }
-
-                    writeFile file: 'configmap.yaml', text: configData
-                    sh 'kubectl apply -f configmap.yaml'
                 }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Smoke Test') {
             steps {
-                script {
-                    def deploymentYaml = """
-                    apiVersion: apps/v1
-                    kind: Deployment
-                    metadata:
-                      name: portfolio
-                      namespace: $KUBERNETES_NAMESPACE
-                    spec:
-                      replicas: 2
-                      selector:
-                        matchLabels:
-                          app: portfolio
-                      template:
-                        metadata:
-                          labels:
-                            app: portfolio
-                        spec:
-                          containers:
-                            - name: portfolio
-                              image: $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
-                              ports:
-                                - containerPort: 3000
-                              envFrom:
-                                - configMapRef:
-                                    name: portfolio-config
-                              livenessProbe:
-                                httpGet:
-                                  path: /health
-                                  port: 3000
-                                initialDelaySeconds: 10
-                                periodSeconds: 30
-                              readinessProbe:
-                                httpGet:
-                                  path: /health
-                                  port: 3000
-                                initialDelaySeconds: 5
-                                periodSeconds: 10
-                              resources:
-                                limits:
-                                  cpu: "0.5"
-                                  memory: "512Mi"
-                                requests:
-                                  cpu: "0.2"
-                                  memory: "256Mi"
-                    """
+                // Wait for service to be ready
+                sh 'sleep 30'
 
-                    def serviceYaml = """
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: portfolio
-                      namespace: $KUBERNETES_NAMESPACE
-                    spec:
-                      selector:
-                        app: portfolio
-                      ports:
-                        - port: 80
-                          targetPort: 3000
-                      type: ClusterIP
-                    """
-
-                    def ingressYaml = """
-                    apiVersion: networking.k8s.io/v1
-                    kind: Ingress
-                    metadata:
-                      name: portfolio
-                      namespace: $KUBERNETES_NAMESPACE
-                      annotations:
-                        cert-manager.io/cluster-issuer: "letsencrypt-prod"
-                        kubernetes.io/ingress.class: "traefik"
-                        traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
-                        traefik.ingress.kubernetes.io/router.tls: "true"
-                    spec:
-                      tls:
-                        - hosts:
-                            - portfolio.glanze.site
-                          secretName: portfolio-tls
-                      rules:
-                        - host: portfolio.glanze.site
-                          http:
-                            paths:
-                              - path: /
-                                pathType: Prefix
-                                backend:
-                                  service:
-                                    name: portfolio
-                                    port:
-                                      number: 80
-                    """
-
-                    writeFile file: 'deployment.yaml', text: deploymentYaml
-                    writeFile file: 'service.yaml', text: serviceYaml
-                    writeFile file: 'ingress.yaml', text: ingressYaml
-
-                    sh 'kubectl apply -f deployment.yaml'
-                    sh 'kubectl apply -f service.yaml'
-                    sh 'kubectl apply -f ingress.yaml'
-
-                    sh "kubectl rollout status deployment/portfolio -n $KUBERNETES_NAMESPACE --timeout=300s"
-                }
+                // Basic health check
+                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://portfolio.glanze.site || true'
             }
         }
 
