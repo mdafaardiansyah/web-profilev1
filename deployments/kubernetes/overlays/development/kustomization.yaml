@@ -1,9 +1,11 @@
-# deployments/kubernetes/overlays/development/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base
 namePrefix: dev-
 namespace: portfolio
-patchesStrategicMerge:
-  - patch-deployment.yaml
+patches:
+  - path: patch-deployment.yaml
+    target:
+      kind: Deployment
+      name: portfolio

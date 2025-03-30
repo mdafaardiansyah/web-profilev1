@@ -1,8 +1,8 @@
-# deployments/kubernetes/ingress/ingressroute.yaml
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: portfolio
+  namespace: portfolio
 spec:
   entryPoints:
     - web
@@ -13,5 +13,17 @@ spec:
       services:
         - name: portfolio
           port: 80
+      middlewares:
+        - name: redirect-https
   tls:
     certResolver: letsencrypt
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: portfolio
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
