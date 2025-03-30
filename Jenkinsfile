@@ -77,6 +77,12 @@ CI=false
                         script {
                             // Update image tag in base deployment
                             sh """
+                                # Tambahkan di pipeline sebelum deploy
+                                kubectl delete ingressroute --all -n portfolio || true
+                                kubectl delete certificate --all -n portfolio || true
+                                kubectl delete secret portfolio-tls-cert -n portfolio || true
+                                sleep 10  # Berikan waktu untuk penghapusan
+
                                 # Update the image tag in deployment.yaml
                                 sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
                             """
