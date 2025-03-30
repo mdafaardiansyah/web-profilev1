@@ -90,7 +90,7 @@ CI=false
         stage('Build and Push Docker Image') {
             steps {
                 sh '''
-                    echo $DOCKER_HUB_PAT | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    echo $DOCKER_HUB_PAT | docker login -u ardidafa --password-stdin
                     docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_REGISTRY/$DOCKER_IMAGE:latest .
                     docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
                     docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:latest
@@ -273,23 +273,29 @@ CI=false
     }
 
     post {
-        success {
-            discordSend description: "✅ Build #${BUILD_NUMBER} berhasil! Deployed ke ${params.DEPLOY_ENV} environment dengan tag ${IMAGE_TAG}\nAkses di: https://portfolio.glanze.site",
+            always {
+                // Clean up local Docker images
+                sh 'docker rmi $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG || true'
+                sh 'docker rmi $DOCKER_REGISTRY/$DOCKER_IMAGE:latest || true'
+
+                // Send notification
+                withCredentials([string(credentialsId: 'discord-notification', variable: 'DISCORD_WEBHOOK')]) {
+                    discordSend(
+                        webhookURL: DISCORD_WEBHOOK,
+                        title: "Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+                        description: "Job: ${env.JOB_NAME}\nStatus: ${currentBuild.currentResult}\nBuild URL: ${env.BUILD_URL}",
                         link: env.BUILD_URL,
                         result: currentBuild.currentResult,
-                        title: "Portfolio CI/CD Pipeline",
-                        webhookURL: credentials('discord-notification')
+                        thumbnail: currentBuild.currentResult == 'SUCCESS' ? 'https://i.imgur.com/Gv81PxI.png' : 'https://i.imgur.com/0FqHSH6.png'
+                    )
+                }
+            }
+            success {
+                echo 'Deployment completed successfully!'
+                echo 'Site is now available at: https://portfolio.glanze.site'
+            }
+            failure {
+                echo 'Deployment failed!'
+            }
         }
-        failure {
-            discordSend description: "❌ Build #${BUILD_NUMBER} gagal! Silakan cek logs untuk detail lebih lanjut.",
-                        link: env.BUILD_URL,
-                        result: currentBuild.currentResult,
-                        title: "Portfolio CI/CD Pipeline",
-                        webhookURL: credentials('discord-notification')
-        }
-        always {
-            sh 'docker logout'
-            cleanWs()
-        }
-    }
 }
