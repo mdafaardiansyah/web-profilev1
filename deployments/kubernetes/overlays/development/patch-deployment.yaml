@@ -1,18 +1,18 @@
-# deployments/kubernetes/overlays/production/patch-deployment.yaml
+# deployments/kubernetes/overlays/development/patch-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: portfolio
 spec:
-  replicas: 2
+  replicas: 1
   template:
     spec:
       containers:
         - name: portfolio
           resources:
             limits:
-              cpu: "0.5"
-              memory: "512Mi"
-            requests:
-              cpu: "0.2"
+              cpu: "0.3"
               memory: "256Mi"
+            requests:
+              cpu: "0.1"
+              memory: "128Mi"

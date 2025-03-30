@@ -1,8 +1,8 @@
+# deployments/kubernetes/ingress/ingressroute.yaml
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: portfolio
-  namespace: portfolio
 spec:
   entryPoints:
     - web

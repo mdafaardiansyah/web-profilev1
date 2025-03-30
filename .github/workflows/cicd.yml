@@ -63,13 +63,13 @@
 #
 #      - name: Deploy to Kubernetes
 #        run: |
-#          # Replace placeholder variables in deployment file
-#          sed -i "s|\${DOCKER_REGISTRY}|${{ env.DOCKER_REGISTRY }}|g; s|\${IMAGE_TAG}|${{ env.IMAGE_TAG }}|g" deployments/kubernetes/base/deployment.yaml
+#          # Replace placeholder variables in development file
+#          sed -i "s|\${DOCKER_REGISTRY}|${{ env.DOCKER_REGISTRY }}|g; s|\${IMAGE_TAG}|${{ env.IMAGE_TAG }}|g" deployments/kubernetes/base/development.yaml
 #
 #          # Apply base resources
 #          kubectl apply -f deployments/kubernetes/base/configmap.yaml -n ${{ env.NAMESPACE }}
 #          kubectl apply -f deployments/kubernetes/base/secret.yaml -n ${{ env.NAMESPACE }}
-#          kubectl apply -f deployments/kubernetes/base/deployment.yaml -n ${{ env.NAMESPACE }}
+#          kubectl apply -f deployments/kubernetes/base/development.yaml -n ${{ env.NAMESPACE }}
 #          kubectl apply -f deployments/kubernetes/base/service.yaml -n ${{ env.NAMESPACE }}
 #
 #          # Apply environment-specific overlay
@@ -83,8 +83,8 @@
 #          kubectl apply -f deployments/kubernetes/istio/gateway.yaml
 #          kubectl apply -f deployments/kubernetes/istio/virtualservice.yaml
 #
-#          # Verify deployment
-#          kubectl rollout status deployment/portfolio -n ${{ env.NAMESPACE }}
+#          # Verify development
+#          kubectl rollout status development/portfolio -n ${{ env.NAMESPACE }}
 #
 #      - name: Deployment Status
 #        run: |

@@ -1,40 +1,46 @@
+# deployments/docker/Dockerfile
 # Build stage
 FROM node:18-alpine AS build
 
+# Set Node options for legacy dependencies if needed
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 WORKDIR /app
 
-# Copy package.json and package-lock.json first for better caching
-COPY package*.json ./
+# Copy package files
+COPY package.json package-lock.json ./
 
-# Install dependencies with error handling
-RUN npm ci --no-audit || npm install --no-audit
+# Install dependencies with CI=false to ignore errors
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
-# Copy the rest of the source code
+# Copy the rest of the application
 COPY . .
 
-# Build with ESLint warnings disabled
-RUN export NODE_OPTIONS=--openssl-legacy-provider && \
-    DISABLE_ESLINT_PLUGIN=true CI=false npm run build
+# Set environment variables for build
+ENV DISABLE_ESLINT_PLUGIN=true
+ENV CI=false
+ENV SKIP_PREFLIGHT_CHECK=true
 
-# Production stage - using lightweight server
-FROM node:18-alpine
+# Build application
+RUN npm run build
 
-WORKDIR /app
-
-# Install serve
-RUN npm install -g serve
+# Production stage
+FROM nginx:alpine
 
 # Copy built assets from the build stage
-COPY --from=build /app/build /app/build
+COPY --from=build /app/build /usr/share/nginx/html
 
-# Add a health check file
-RUN mkdir -p /app/build/health && \
-    echo "OK" > /app/build/health/index.html
+# Add custom nginx config
+COPY deployments/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+# Create health check endpoint file
+RUN echo "healthy" > /usr/share/nginx/html/health
 
-EXPOSE 3000
+# Add health check for kubernetes
+HEALTHCHECK --interval=30s --timeout=3s CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
 
-# Serve app with routing configuration for SPA
-CMD ["serve", "-s", "build", "-l", "3000", "--cors"]
+# Expose port
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
