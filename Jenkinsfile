@@ -87,28 +87,14 @@ CI=false
             }
         }
 
-        stage('Build and Push Docker Image') {
+        stage('Build & Push Docker Image') {
             steps {
-                sh '''
-                    echo $DOCKER_HUB_PAT | docker login -u ardidafa --password-stdin
-                    sh 'echo $PATH'
-                    sh 'echo "test"'
+                withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
+                    sh 'echo $DOCKER_PAT | docker login -u ardidafa --password-stdin'
                     sh "docker build --no-cache -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}"
                     sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
-                '''
-            }
-        }
-
-        stage('Create Namespace if not exists') {
-            steps {
-                sh '''
-                    mkdir -p $HOME/.kube
-                    cat "$KUBECONFIG" > $HOME/.kube/config
-                    chmod 600 $HOME/.kube/config
-
-                    kubectl get namespace $KUBERNETES_NAMESPACE || kubectl create namespace $KUBERNETES_NAMESPACE
-                '''
+                }
             }
         }
 
