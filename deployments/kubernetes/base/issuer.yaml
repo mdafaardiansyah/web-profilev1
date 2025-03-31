@@ -1,13 +1,14 @@
 apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+kind: Issuer
 metadata:
-  name: letsencrypt-prod
+  name: letsencrypt-traefik
+  namespace: portfolio
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
     email: ardidafa21@gmail.com
     privateKeySecretRef:
-      name: letsencrypt-prod
+      name: letsencrypt-traefik-key
     solvers:
       - http01:
           ingress:

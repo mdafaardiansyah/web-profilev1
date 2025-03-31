@@ -6,4 +6,4 @@ resources:
   - service.yaml
   - configmap.yaml
   - ingress.yaml
-  - cluster-issuer.yaml
+  - issuer.yaml

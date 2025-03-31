@@ -4,13 +4,9 @@ metadata:
   name: portfolio
   namespace: portfolio
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    kubernetes.io/ingress.class: "traefik"
+    cert-manager.io/issuer: "letsencrypt-traefik"
 spec:
-  tls:
-    - hosts:
-        - portfolio.glanze.site
-      secretName: portfolio-tls
+  ingressClassName: traefik
   rules:
     - host: portfolio.glanze.site
       http:
@@ -22,3 +18,7 @@ spec:
                 name: portfolio
                 port:
                   number: 80
+  tls:
+    - hosts:
+        - portfolio.glanze.site
+      secretName: portfolio-tls  # Nama secret TLS
