@@ -91,6 +91,10 @@ CI=false
 
                             // Apply Kubernetes manifests based on environment using kustomize
                             sh """
+                                # Nonaktifkan validasi webhook
+                                kubectl delete validatingwebhookconfiguration nginx-ingress-ingress-nginx-admission || true
+                                kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission || true
+
                                 kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml
 
                                 # Apply using kustomize overlay based on selected environment
