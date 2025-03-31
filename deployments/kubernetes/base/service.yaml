@@ -1,12 +1,11 @@
-# deployments/kubernetes/base/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: portfolio
+  namespace: portfolio
 spec:
-  selector:
-    app: portfolio
   ports:
     - port: 80
       targetPort: 80
-  type: ClusterIP
+  selector:
+    app: portfolio
