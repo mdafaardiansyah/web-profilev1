@@ -77,6 +77,8 @@ CI=false
                         script {
                             // Create namespace if not exists
                             sh """
+                                kubectl delete namespace ${KUBERNETES_NAMESPACE}
+
                                 kubectl create namespace ${KUBERNETES_NAMESPACE}
                             """
 
