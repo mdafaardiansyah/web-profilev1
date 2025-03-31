@@ -1,8 +1,8 @@
-# deployments/kubernetes/base/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: portfolio-config
+  namespace: portfolio
 data:
-  REACT_APP_API_URL: "https://api.glanze.site"
   NODE_ENV: "production"
+  API_URL: "https://api.example.com"

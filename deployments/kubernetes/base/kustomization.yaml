@@ -6,4 +6,3 @@ resources:
   - service.yaml
   - configmap.yaml
   - ingress.yaml
-  - issuer.yaml

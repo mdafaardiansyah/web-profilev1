@@ -74,51 +74,30 @@ CI=false
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
-                        script {
-                            // Create namespace if not exists
-                            sh """
-                                kubectl delete namespace ${KUBERNETES_NAMESPACE}
-                                kubectl create namespace ${KUBERNETES_NAMESPACE}
-                            """
+                        sh '''
+                            # Clean start
+                            kubectl delete namespace portfolio --ignore-not-found
+                            sleep 10
+                            kubectl create namespace portfolio
 
-                            // Create Docker registry secret
-                            sh """
-                                kubectl create secret docker-registry docker-registry-secret \\
-                                    --docker-server=${DOCKER_REGISTRY} \\
-                                    --docker-username=ardidafa \\
-                                    --docker-password=${DOCKER_PAT} \\
-                                    -n ${KUBERNETES_NAMESPACE}
-                            """
+                            # Create Docker registry secret
+                            kubectl create secret docker-registry docker-registry-secret \
+                                --docker-server=docker.io \
+                                --docker-username=ardidafa \
+                                --docker-password=$DOCKER_PAT \
+                                -n portfolio
 
-                            // Apply Kubernetes manifests based on environment using kustomize
-                            sh """
-                                # Nonaktifkan validasi webhook
-                                kubectl delete validatingwebhookconfiguration nginx-ingress-ingress-nginx-admission || true
-                                kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission || true
+                            # Apply Kubernetes manifests
+                            kubectl apply -f deployments/kubernetes/base/configmap.yaml
+                            kubectl apply -f deployments/kubernetes/base/service.yaml
+                            kubectl apply -f deployments/kubernetes/base/deployment.yaml
 
-                                kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml
+                            # Apply ingress last
+                            kubectl apply -f deployments/kubernetes/base/ingress.yaml
 
-                                # Apply using kustomize overlay based on selected environment
-                                kubectl apply -k deployments/kubernetes/overlays/${params.DEPLOY_ENV} -n ${KUBERNETES_NAMESPACE}
-
-                                # Verify rollout status
-                                kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s
-
-                                # 11. Periksa semua resources
-                                echo "Deployment:"
-                                kubectl get deployment -n portfolio
-                                echo "Pods:"
-                                kubectl get pods -n portfolio
-                                echo "Service:"
-                                kubectl get service -n portfolio
-                                echo "IngressRoute:"
-                                kubectl get ingressroute -n portfolio
-                                echo "Certificates (akan membutuhkan waktu untuk dibuat):"
-                                kubectl get certificate -n portfolio || true
-                                kubectl get pods,service,ingress -n portfolio
-                                kubectl logs -n portfolio -l app=portfolio
-                            """
-                        }
+                            # Wait for deployment to be ready
+                            kubectl rollout status deployment/portfolio -n portfolio --timeout=300s
+                        '''
                     }
                 }
             }
