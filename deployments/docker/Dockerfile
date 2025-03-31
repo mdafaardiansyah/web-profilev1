@@ -30,6 +30,9 @@ FROM nginx:alpine
 # Copy built assets from the build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
+# Tambahkan setelah menyalin file build
+RUN ls -la /usr/share/nginx/html/
+
 # Add custom nginx config
 COPY deployments/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
