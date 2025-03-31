@@ -15,27 +15,20 @@ spec:
     spec:
       containers:
         - name: portfolio
-          image: docker.io/ardidafa/portfolio:latest
+          image: ardidafa/portfolio:latest
           ports:
-            - name: http
-              containerPort: 80
+            - containerPort: 80
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health
               port: 80
-            initialDelaySeconds: 15
-            periodSeconds: 20
+            initialDelaySeconds: 10
+            periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
-          resources:
-            limits:
-              cpu: "0.5"
-              memory: "512Mi"
-            requests:
-              cpu: "0.2"
-              memory: "256Mi"
       imagePullSecrets:
         - name: docker-registry-secret

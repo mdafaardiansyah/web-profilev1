@@ -91,14 +91,10 @@ CI=false
 
                             // Apply Kubernetes manifests based on environment using kustomize
                             sh """
+                                kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml
+
                                 # Apply using kustomize overlay based on selected environment
                                 kubectl apply -k deployments/kubernetes/overlays/${params.DEPLOY_ENV} -n ${KUBERNETES_NAMESPACE}
-
-                                # Apply cert-manager configurations
-                                kubectl apply -f deployments/kubernetes/cert-manager
-
-                                # Apply ingress configurations
-                                kubectl apply -f deployments/kubernetes/ingress
 
                                 # Verify rollout status
                                 kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s
@@ -114,6 +110,8 @@ CI=false
                                 kubectl get ingressroute -n portfolio
                                 echo "Certificates (akan membutuhkan waktu untuk dibuat):"
                                 kubectl get certificate -n portfolio || true
+                                kubectl get pods,service,ingress -n portfolio
+                                kubectl logs -n portfolio -l app=portfolio
                             """
                         }
                     }
