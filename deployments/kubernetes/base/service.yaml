@@ -4,8 +4,10 @@ metadata:
   name: portfolio
   namespace: portfolio
 spec:
-  ports:
-    - port: 80
-      targetPort: 80
   selector:
     app: portfolio
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP

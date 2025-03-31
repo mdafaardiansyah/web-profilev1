@@ -75,21 +75,9 @@ CI=false
                 withCredentials([string(credentialsId: 'docker-hub-pat', variable: 'DOCKER_PAT')]) {
                     withKubeConfig([credentialsId: 'kubeconfig']) {
                         script {
-                            // Update image tag in base deployment
-                            sh """
-                                # Tambahkan di pipeline sebelum deploy
-                                kubectl delete ingressroute --all -n portfolio || true
-                                kubectl delete certificate --all -n portfolio || true
-                                kubectl delete secret portfolio-tls-cert -n portfolio || true
-                                sleep 10  # Berikan waktu untuk penghapusan
-
-                                # Update the image tag in deployment.yaml
-                                sed -i "s|image: docker.io/ardidafa/portfolio:.*|image: docker.io/ardidafa/portfolio:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
-                            """
-
                             // Create namespace if not exists
                             sh """
-                                kubectl create namespace ${KUBERNETES_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                                kubectl create namespace ${KUBERNETES_NAMESPACE}
                             """
 
                             // Create Docker registry secret
@@ -98,7 +86,7 @@ CI=false
                                     --docker-server=${DOCKER_REGISTRY} \\
                                     --docker-username=ardidafa \\
                                     --docker-password=${DOCKER_PAT} \\
-                                    -n ${KUBERNETES_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                                    -n ${KUBERNETES_NAMESPACE}
                             """
 
                             // Apply Kubernetes manifests based on environment using kustomize
@@ -114,6 +102,18 @@ CI=false
 
                                 # Verify rollout status
                                 kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s
+
+                                # 11. Periksa semua resources
+                                echo "Deployment:"
+                                kubectl get deployment -n portfolio
+                                echo "Pods:"
+                                kubectl get pods -n portfolio
+                                echo "Service:"
+                                kubectl get service -n portfolio
+                                echo "IngressRoute:"
+                                kubectl get ingressroute -n portfolio
+                                echo "Certificates (akan membutuhkan waktu untuk dibuat):"
+                                kubectl get certificate -n portfolio || true
                             """
                         }
                     }

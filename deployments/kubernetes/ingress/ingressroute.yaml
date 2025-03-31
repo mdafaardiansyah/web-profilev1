@@ -1,17 +1,16 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: portfolio
+  name: portfolio-https
   namespace: portfolio
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
-    - match: Host(`portfolio.glanze.site`)
+    - match: Host(\`portfolio.glanze.site\`)
       kind: Rule
       services:
-        - name: portfolio  # Ganti dengan 'dev-portfolio' jika menggunakan environment development
+        - name: portfolio
           port: 80
   tls:
     certResolver: letsencrypt
