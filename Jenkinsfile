@@ -151,42 +151,6 @@ CI=false
                     sh '''
                         # Apply ClusterIssuer untuk Let's Encrypt
                         kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml
-
-                        # Buat IngressRoute untuk Traefik
-                        cat <<EOF | kubectl apply -f -
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: portfolio
-  namespace: ${KUBERNETES_NAMESPACE}
-spec:
-  entryPoints:
-    - web
-    - websecure
-  routes:
-    - match: Host(`portfolio.glanze.site`)
-      kind: Rule
-      services:
-        - name: portfolio
-          port: 80
-      middlewares:
-        - name: redirect-https
-  tls:
-    certResolver: letsencrypt
-EOF
-
-                        # Buat Middleware untuk redirect HTTPS
-                        cat <<EOF | kubectl apply -f -
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: redirect-https
-  namespace: ${KUBERNETES_NAMESPACE}
-spec:
-  redirectScheme:
-    scheme: https
-    permanent: true
-EOF
                     '''
 
                     // Verify deployment
