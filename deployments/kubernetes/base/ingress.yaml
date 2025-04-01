@@ -4,9 +4,9 @@ metadata:
   name: portfolio
   namespace: portfolio
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.io/cluster-issuer: "letsencrypt-http01"
 spec:
-  ingressClassName: traefik  # THIS IS CRUCIAL
+  ingressClassName: traefik
   tls:
     - hosts:
         - portfolio.glanze.site
