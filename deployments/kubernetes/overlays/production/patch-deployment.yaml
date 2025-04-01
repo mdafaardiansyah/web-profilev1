@@ -1,10 +1,10 @@
-# deployments/kubernetes/overlays/production/patch-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: portfolio
+  namespace: portfolio
 spec:
-  replicas: 1
+  replicas: 2
   template:
     spec:
       containers:

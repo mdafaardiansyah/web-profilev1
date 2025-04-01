@@ -4,7 +4,7 @@ metadata:
   name: portfolio
   namespace: portfolio
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: portfolio
@@ -18,15 +18,18 @@ spec:
           image: docker.io/ardidafa/portfolio:latest
           ports:
             - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: portfolio-config
           livenessProbe:
             httpGet:
-              path: /health
+              path: /
               port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 30
+            initialDelaySeconds: 15
+            periodSeconds: 20
           readinessProbe:
             httpGet:
-              path: /health
+              path: /
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -35,7 +38,7 @@ spec:
               cpu: "0.5"
               memory: "512Mi"
             requests:
-              cpu: "0.2"
-              memory: "256Mi"
+              cpu: "0.1"
+              memory: "128Mi"
       imagePullSecrets:
         - name: docker-registry-secret

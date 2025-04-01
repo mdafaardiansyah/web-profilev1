@@ -4,5 +4,5 @@ metadata:
   name: portfolio-config
   namespace: portfolio
 data:
-  NODE_ENV: "production"
-  REACT_APP_API_URL: "https://api.glanze.site"
+  NODE_ENV: "development"
+  REACT_APP_API_URL: "https://dev-api.glanze.site"
