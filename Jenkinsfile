@@ -132,7 +132,7 @@ CI=false
                         sed -i "s|image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:.*|image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
                         # Apply konfigurasi dasar
-                        kubectl apply -f deployments/kubernetes/base
+                        kubectl apply -k deployments/kubernetes/base
                     '''
 
                     // Apply environment-specific configurations if needed
