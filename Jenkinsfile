@@ -126,16 +126,13 @@ CI=false
                 withKubeConfig([credentialsId: 'kubeconfig']) {
                     sh '''
                         # Nonaktifkan validasi webhook sementara jika ada
-                        kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission || true
+                        # kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission || true
 
                         # Update image tag di file deployment
                         sed -i "s|image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:.*|image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${IMAGE_TAG}|g" deployments/kubernetes/base/deployment.yaml
 
                         # Apply konfigurasi dasar
-                        kubectl apply -f deployments/kubernetes/base/configmap.yaml -n ${KUBERNETES_NAMESPACE}
-                        kubectl apply -f deployments/kubernetes/base/deployment.yaml -n ${KUBERNETES_NAMESPACE}
-                        kubectl apply -f deployments/kubernetes/base/service.yaml -n ${KUBERNETES_NAMESPACE}
-                        kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml
+                        kubectl apply -f deployments/kubernetes/base
                     '''
 
                     // Apply environment-specific configurations if needed
@@ -146,12 +143,6 @@ CI=false
                             sh "kubectl apply -f deployments/kubernetes/overlays/development/kustomization.yaml -n ${KUBERNETES_NAMESPACE} || true"
                         }
                     }
-
-                    // Setup Ingress & TLS
-                    sh '''
-                        # Apply ClusterIssuer untuk Let's Encrypt
-                        kubectl apply -f deployments/kubernetes/base/cluster-issuer.yaml
-                    '''
 
                     // Verify deployment
                     sh "kubectl rollout status deployment/portfolio -n ${KUBERNETES_NAMESPACE} --timeout=300s"
@@ -176,7 +167,7 @@ CI=false
                         kubectl get deployment portfolio -n ${KUBERNETES_NAMESPACE}
                         kubectl get pods -l app=portfolio -n ${KUBERNETES_NAMESPACE}
                         kubectl get svc -n ${KUBERNETES_NAMESPACE}
-                        kubectl get ingressroute -n ${KUBERNETES_NAMESPACE}
+                        kubectl get ingress -n ${KUBERNETES_NAMESPACE}
                     '''
                 }
             }
