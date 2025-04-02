@@ -168,6 +168,7 @@ CI=false
                         kubectl get pods -l app=portfolio -n ${KUBERNETES_NAMESPACE}
                         kubectl get svc -n ${KUBERNETES_NAMESPACE}
                         kubectl get ingress -n ${KUBERNETES_NAMESPACE}
+                        kubectl get certificate -n ${KUBERNETES_NAMESPACE} || true
                     '''
                 }
             }

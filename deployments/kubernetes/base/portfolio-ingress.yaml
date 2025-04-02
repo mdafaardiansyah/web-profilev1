@@ -4,11 +4,9 @@ metadata:
   name: portfolio-ingress
   namespace: portfolio
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod-nginx"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: nginx
   tls:
     - hosts:
         - portfolio.glanze.site

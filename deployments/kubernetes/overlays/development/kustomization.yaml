@@ -5,3 +5,4 @@ resources:
 patchesStrategicMerge:
   - patch-deployment.yaml
   - patch-configmap.yaml
+  - patch-ingress.yaml
