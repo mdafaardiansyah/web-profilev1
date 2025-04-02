@@ -121,6 +121,21 @@ CI=false
             }
         }
 
+        stage('Prepare Ingress Webhook') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    sh '''
+                        # Hapus webhook terlebih dahulu untuk menghindari masalah validasi sertifikat
+                        kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission || true
+                        kubectl delete -A MutatingWebhookConfiguration ingress-nginx-admission || true
+
+                        # Tunggu sebentar sebelum melanjutkan
+                        sleep 5
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig']) {
