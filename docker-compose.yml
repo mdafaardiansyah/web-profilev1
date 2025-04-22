@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  chill-movie-app:
+  portfolio:
     image: ardidafa/portfolio:latest
-    container_name: chill-movie-app
+    container_name: portfolio
     restart: unless-stopped
     ports:
       - "3002:80"  # Menghindari konflik dengan Nginx di host yang menggunakan port 80

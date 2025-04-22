@@ -90,7 +90,7 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "if [ -d /var/www/portfolio/.git ]; then \
                               cd /var/www/portfolio && git pull; \
                             else \
-                              git clone https://github.com/mdafaardiansyah/chill-apps-reactjs-1.git /var/www/portfolio; \
+                              git clone https://github.com/mdafaardiansyah/web-profilev1.git /var/www/portfolio; \
                             fi"
                             
                             # Copy configuration files
@@ -114,7 +114,7 @@ pipeline {
                 sh 'sleep 30'
 
                 // Basic health check
-                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://hsbi1b-chill.glanze.site || true'
+                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://portfolio.glanze.site || true'
             }
         }
     }
