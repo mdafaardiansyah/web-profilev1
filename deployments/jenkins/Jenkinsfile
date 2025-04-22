@@ -104,8 +104,8 @@ pipeline {
                             docker compose up -d && \
 
                             # nginx reverse proxy conf
-                            sudo cp nginx-site.conf /etc/nginx/sites-available/portfolio.glanze.site && \
-                            sudo ln -sf /etc/nginx/sites-available/portfolio.glanze.site /etc/nginx/sites-enabled/ && \
+                            sudo cp nginx-site.conf /etc/nginx/sites-available/portfolio.glanze.site.conf && \
+                            sudo ln -sf /etc/nginx/sites-available/portfolio.glanze.site.conf /etc/nginx/sites-enabled/ && \
                             sudo nginx -t && \
                             sudo systemctl reload nginx"
                         '''
