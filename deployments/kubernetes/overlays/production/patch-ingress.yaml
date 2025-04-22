@@ -1,8 +1,0 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: portfolio-ingress
-  namespace: portfolio
-spec:
-  rules:
-    - host: portfolio.glanze.site # Ganti dengan nama domain produksi Anda

@@ -1,0 +1,154 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'NodeJS 18'
+    }
+
+    parameters {
+        string(name: 'RELEASE_TAG', defaultValue: '', description: 'Release tag to build and deploy (kosongkan untuk menggunakan build number)')
+        choice(name: 'DEPLOY_ENV', choices: ['development', 'production'], description: 'Environment to deploy')
+    }
+
+    environment {
+        DOCKER_HUB_CREDS = credentials('docker-hub')
+        DOCKER_HUB_PAT = credentials('docker-hub-pat')
+        DISCORD_WEBHOOK = credentials('discord-notification')
+        IP_SERVER = credentials('ip-server-kvm2')
+        USER_IP = credentials('user-ip-kvm2')
+        APP_NAME = 'portfolio'
+        DOCKER_IMAGE = "ardidafa/${APP_NAME}"
+        IMAGE_TAG = "${params.RELEASE_TAG ? params.RELEASE_TAG : env.BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    discordSend(
+                        webhookURL: DISCORD_WEBHOOK,
+                        title: "BUILD STARTED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        description: "Build started for ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        link: env.BUILD_URL,
+                        result: 'STARTED'
+                    )
+                }
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                sh 'npm audit --production || true'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+        
+        stage('Docker Build') {
+            steps {
+                // Perhatikan path Dockerfile yang sudah diubah
+                sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
+            }
+        }
+        
+        stage('Docker Push') {
+            steps {
+                sh "echo ${DOCKER_HUB_PAT} | docker login -u ardidafa --password-stdin"
+                sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                sh "docker push ${DOCKER_IMAGE}:latest"
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: 'deploy-server', keyFileVariable: 'SSH_KEY')]) {
+                    withEnv([
+                        "SERVER_IP=${IP_SERVER}", 
+                        "SERVER_USER=${USER_IP}",
+                        "DOCKER_IMG=${DOCKER_IMAGE}",
+                        "IMG_TAG=${IMAGE_TAG}"
+                    ]) {
+                        sh '''
+                            # Set correct SSH key permissions
+                            chmod 600 "$SSH_KEY"
+                            
+                            # Create directory on server
+                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "mkdir -p /var/www/portfolio"
+                            
+                            # Clone or update repository
+                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "if [ -d /var/www/portfolio/.git ]; then \
+                              cd /var/www/portfolio && git pull; \
+                            else \
+                              git clone https://github.com/mdafaardiansyah/chill-apps-reactjs-1.git /var/www/portfolio; \
+                            fi"
+                            
+                            # Copy configuration files
+                            scp -o StrictHostKeyChecking=no -i "$SSH_KEY" deployments/nginx/site.conf $SERVER_USER@$SERVER_IP:/var/www/portfolio/nginx-site.conf
+                            
+                            # Deploy application with correct nginx configuration
+                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "cd /var/www/portfolio && \
+                            docker compose down && \
+                            docker pull $DOCKER_IMG:$IMG_TAG && \
+                            docker tag $DOCKER_IMG:$IMG_TAG $DOCKER_IMG:latest && \
+                            docker compose up -d"
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Smoke Test') {
+            steps {
+                // Wait for service to be ready
+                sh 'sleep 30'
+
+                // Basic health check
+                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://hsbi1b-chill.glanze.site || true'
+            }
+        }
+    }
+    
+    post {
+        success {
+            discordSend(
+                webhookURL: DISCORD_WEBHOOK,
+                title: "BUILD SUCCESSFUL: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                description: "Build completed successfully for ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                link: env.BUILD_URL,
+                result: 'SUCCESS'
+            )
+        }
+        failure {
+            discordSend(
+                webhookURL: DISCORD_WEBHOOK,
+                title: "BUILD FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                description: "Build failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                link: env.BUILD_URL,
+                result: 'FAILURE'
+            )
+        }
+        always {
+            // Clean up Docker images
+            withEnv([
+                "DOCKER_IMG=${DOCKER_IMAGE}", 
+                "IMG_TAG=${IMAGE_TAG}"
+            ]) {
+                sh '''
+                    docker rmi $DOCKER_IMG:$IMG_TAG || true
+                    docker rmi $DOCKER_IMG:latest || true
+                '''
+            }
+        }
+    }
+}
