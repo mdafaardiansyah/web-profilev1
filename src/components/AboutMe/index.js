@@ -1,7 +1,6 @@
 import React from 'react'
 import HeroBgAnimation from '../HeroBgAnimation'
-import { HeroContainer, HeroBg, HeroLeftContainer, Img, HeroRightContainer, HeroInnerContainer, TextLoop, Title, Span, SubTitle,SocialMediaIcons,SocialMediaIcon, ResumeButton, ButtonContainer } from './AboutmeStyle'
-import Typewriter from 'typewriter-effect';
+import { HeroContainer, HeroBg, HeroLeftContainer, Img, HeroRightContainer, HeroInnerContainer, Title, SubTitle, ResumeButton, ButtonContainer } from './AboutmeStyle'
 import { Bio } from '../../data/constants';
 
 const AboutMe = () => {
