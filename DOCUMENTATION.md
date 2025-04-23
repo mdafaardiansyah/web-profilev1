@@ -1,4 +1,4 @@
-# Technical Documentation - Portfolio Website
+# Technical Documentation - Glanze Portfolio Website
 
 ## Architecture Overview
 
