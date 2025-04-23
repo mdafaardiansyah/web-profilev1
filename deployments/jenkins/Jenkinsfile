@@ -145,14 +145,18 @@ pipeline {
             )
         }
         always {
-            // Clean up Docker images
+            // Clean up Docker images and builder cache
             withEnv([
                 "DOCKER_IMG=${DOCKER_IMAGE}", 
                 "IMG_TAG=${IMAGE_TAG}"
             ]) {
                 sh '''
+                    # Hapus image yang tidak terpakai
                     docker rmi $DOCKER_IMG:$IMG_TAG || true
                     docker rmi $DOCKER_IMG:latest || true
+                    
+                    # Bersihkan builder cache untuk mencegah penumpukan storage
+                    docker builder prune -f || true
                 '''
             }
         }
