@@ -1,5 +1,5 @@
 import React from 'react'
-import HeroBgAnimation from '../HeroBgAnimation'
+import StarfieldBackground from '../StarfieldBackground'
 import { HeroContainer, HeroBg, HeroLeftContainer, Img, HeroRightContainer, HeroInnerContainer, TextLoop, Title, Span, SubTitle, ResumeButton } from './HeroStyle'
 import Typewriter from 'typewriter-effect';
 import { Bio } from '../../data/constants';
@@ -9,14 +9,14 @@ const HeroSection = () => {
         <div id="about">
             <HeroContainer>
                 <HeroBg>
-                    <HeroBgAnimation />
+                    <StarfieldBackground />
                 </HeroBg>
                 <HeroInnerContainer >
                     <HeroLeftContainer id="Left">
-                        <Title>Hi, I am <br /> {Bio.name}</Title>
+                        <Title className="glow-text">Hi, I am <br /> {Bio.name}</Title>
                         <TextLoop>
                             I am a
-                            <Span>
+                            <Span className="glow-text">
                                 <Typewriter
                                     options={{
                                         strings: Bio.roles,

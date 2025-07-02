@@ -1,5 +1,5 @@
 import React from 'react'
-import { Nav, NavLink, NavbarContainer, Span, NavLogo, NavItems, GitHubButton, ButtonContainer, MobileIcon, MobileMenu, MobileNavLogo, MobileLink } from './NavbarStyledComponent'
+import { Nav, NavLogo, NavbarContainer, Span, NavMenu, NavItem, NavItems, NavLink, ButtonContainer, GitHubButton, MobileIcon, MobileMenu, MobileNavLogo, MobileLink } from './NavbarStyledComponent'
 import { DiCssdeck } from 'react-icons/di';
 import { FaBars } from 'react-icons/fa';
 import { Bio } from '../../data/constants';
@@ -30,6 +30,7 @@ const Navbar = () => {
           <NavLink href='#education'>Education</NavLink>
         </NavItems>
         <ButtonContainer>
+          
           <GitHubButton href={Bio.github} target="_blank">Github Profile</GitHubButton>
         </ButtonContainer>
         {

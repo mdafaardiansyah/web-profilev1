@@ -95,14 +95,23 @@ const SkillList = styled.div`
 const SkillItem = styled.div`
   font-size: 16px;
   font-weight: 400;
-  color: ${({ theme }) => theme.text_primary + 80};
-  border: 1px solid ${({ theme }) => theme.text_primary + 80};
+  color: ${({ theme }) => theme.text_primary};
+  border: 1px solid ${({ theme }) => theme.primary};
   border-radius: 12px;
   padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  background: rgba(0, 212, 255, 0.05);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2), 0 0 30px rgba(123, 104, 238, 0.1), inset 0 0 15px rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.4), 0 0 50px rgba(123, 104, 238, 0.2), inset 0 0 25px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+  
   @media (max-width: 768px) {
     font-size: 14px;
     padding: 8px 12px;
@@ -120,19 +129,20 @@ const SkillImage = styled.img`
 
 
 const Skills = () => {
+
   return (
     <Container id="skills">
       <Wrapper>
-        <Title>Skills</Title>
+        <Title className="glow-text">Skills</Title>
         <Desc>Here are some of my skills on which I have been experienced until now.
         </Desc>
         <SkillsContainer>
-          {skills.map((skill) => (
-            <Skill>
+          {skills.map((skill, index) => (
+            <Skill key={index}>
               <SkillTitle>{skill.title}</SkillTitle>
               <SkillList>
-                {skill.skills.map((item) => (
-                  <SkillItem>
+                {skill.skills.map((item, itemIndex) => (
+                  <SkillItem key={itemIndex}>
                     <SkillImage src={item.image}/>
                     {item.name}
                   </SkillItem>
@@ -140,7 +150,6 @@ const Skills = () => {
               </SkillList>
             </Skill>
           ))}
-
         </SkillsContainer>
       </Wrapper>
     </Container>

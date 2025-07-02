@@ -21,17 +21,21 @@ const Card = styled.div`
     background-color: ${({ theme }) => theme.card};
     cursor: pointer;
     border-radius: 10px;
-    box-shadow: 0 0 12px 4px rgba(0,0,0,0.4);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2), 0 0 40px rgba(123, 104, 238, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05);
     overflow: hidden;
     padding: 26px 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     transition: all 0.5s ease-in-out;
+    background: linear-gradient(135deg, ${({ theme }) => theme.card} 0%, rgba(0, 212, 255, 0.05) 100%);
+    
     &:hover {
         transform: translateY(-10px);
-        box-shadow: 0 0 50px 4px rgba(0,0,0,0.6);
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.4), 0 0 60px rgba(123, 104, 238, 0.2), inset 0 0 30px rgba(255, 255, 255, 0.1);
         filter: brightness(1.1);
+        border-color: rgba(0, 212, 255, 0.6);
     }
     &:hover ${Button} {
         display: block;

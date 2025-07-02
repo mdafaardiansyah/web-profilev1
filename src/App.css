@@ -1,11 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 *{
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     
+}
+
+/* Glow effect for text */
+.glow-text {
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3), 0 0 30px rgba(0, 212, 255, 0.2);
+}
+
+/* Holographic effect for cards */
+.holographic {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(123, 104, 238, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 html{
