@@ -145,8 +145,10 @@ pipeline {
                     
                     def exitCode = sh(
                         script: """
-                            # Create directory for reports
+                            # Create directory for reports and ensure it's accessible
                             mkdir -p trivy-reports
+                            chmod 777 trivy-reports
+                            echo "Created trivy-reports directory at $(pwd)/trivy-reports"
                             
                             # Run Trivy with properly escaped workspace path
                             docker run --rm \
@@ -155,7 +157,7 @@ pipeline {
                                 -w /workspace \
                                 aquasec/trivy:latest image \
                                 --format json \
-                                --output trivy-report.json \
+                                --output /workspace/trivy-report.json \
                                 --severity HIGH,CRITICAL \
                                 --exit-code 1 \
                                 \"${dockerImg}:${imgTag}\"
@@ -178,6 +180,24 @@ pipeline {
                     
                     // Archive the report with detailed error handling
                     script {
+                        sh '''
+                            # Check if trivy-report.json exists and has content
+                            if [ -f "trivy-report.json" ] && [ -s "trivy-report.json" ]; then
+                                echo "✅ Found trivy-report.json for archiving"
+                            else
+                                echo "⚠️ trivy-report.json not found or empty, checking trivy-reports directory"
+                                if [ -d "trivy-reports" ]; then
+                                    echo "Contents of trivy-reports directory:"
+                                    ls -la trivy-reports/
+                                    # If report exists in trivy-reports directory, copy it to workspace root
+                                    if [ -f "trivy-reports/trivy-report.json" ]; then
+                                        cp trivy-reports/trivy-report.json .
+                                        echo "Copied report from trivy-reports directory"
+                                    fi
+                                fi
+                            fi
+                        '''
+                        
                         def archiveResult = archiveArtifacts(artifacts: 'trivy-report.json', allowEmptyArchive: true)
                         if (!archiveResult) {
                             echo "⚠️ Warning: Could not archive trivy-report.json, but continuing pipeline"
