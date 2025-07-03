@@ -218,7 +218,7 @@ pipeline {
                                     
                                     if [ "$critical_count" != "0" ] || [ "$high_count" != "0" ]; then
                                         echo "\n🔍 Sample vulnerability data:"
-                                        grep -A2 -B2 '"Severity":[[:space:]]*"CRITICAL"\|"Severity":[[:space:]]*"HIGH"' trivy-report.json | head -20 || echo "No detailed vulnerability data found"
+                                        grep -A2 -B2 '"Severity":[[:space:]]*"CRITICAL"\\|"Severity":[[:space:]]*"HIGH"' trivy-report.json | head -20 || echo "No detailed vulnerability data found"
                                     fi
                                 fi
                             else
