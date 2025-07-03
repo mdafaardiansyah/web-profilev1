@@ -139,10 +139,7 @@ pipeline {
                     def deployEnv = params.DEPLOY_ENV
                     
                     // Run Trivy scan using Docker with proper volume mounting
-                    // Ensure workspace path is properly escaped for Docker volume mounting
-                    def workspacePath = sh(script: 'pwd | tr -d "\n"', returnStdout: true).trim()
-                    echo "Using workspace path: ${workspacePath}"
-                    
+                    // Run Trivy scan using Docker with a dedicated volume for the report
                     def exitCode = sh(
                         script: """
                             # Create directory for reports and ensure it's accessible
@@ -150,31 +147,29 @@ pipeline {
                             chmod 777 trivy-reports
                             echo "Created trivy-reports directory at \$(pwd)/trivy-reports"
                             
-                            # Run Trivy with properly escaped workspace path
+                            # Run Trivy, mounting the reports directory into the container. This is more reliable than mounting the whole workspace.
                             docker run --rm \
                                 -v /var/run/docker.sock:/var/run/docker.sock \
-                                -v \"${workspacePath}\":/workspace \
-                                -w /workspace \
+                                -v "\$(pwd)/trivy-reports":/reports \
                                 aquasec/trivy:latest image \
                                 --format json \
-                                --output /workspace/trivy-report.json \
+                                --output /reports/trivy-report.json \
                                 --severity HIGH,CRITICAL \
                                 --exit-code 1 \
-                                \"${dockerImg}:${imgTag}\"
+                                "${dockerImg}:${imgTag}"
                         """,
                         returnStatus: true
                     )
                     
-                    // Check if report exists before archiving
+                    // Check if report exists in the mounted directory and move it to the workspace root
                     sh '''
-                        if [ -f "trivy-report.json" ]; then
-                            echo "✅ Found trivy-report.json, size: $(stat -c%s "trivy-report.json" 2>/dev/null || stat -f%z "trivy-report.json" 2>/dev/null || echo "unknown") bytes"
-                            ls -la trivy-report.json
+                        if [ -f "trivy-reports/trivy-report.json" ]; then
+                            echo "✅ Found trivy-report.json in trivy-reports directory."
+                            mv trivy-reports/trivy-report.json .
                         else
-                            echo "❌ trivy-report.json not found in workspace"
-                            echo "Current directory: $(pwd)"
-                            echo "Directory contents:"
-                            ls -la
+                            echo "❌ trivy-report.json not found in trivy-reports directory."
+                            echo "trivy-reports directory contents:"
+                            ls -la trivy-reports
                         fi
                     '''
                     
@@ -300,7 +295,7 @@ pipeline {
                         # Clean up dangling images and build cache
                         echo "Cleaning up dangling images and build cache..."
                         docker image prune -f
-                        docker builder prune -f --filter until=24h
+                        docker builder prune -f
                     '''
                 }
             }
