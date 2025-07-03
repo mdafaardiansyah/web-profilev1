@@ -87,14 +87,6 @@ This will create an optimized production build in the `build` folder.
 
 ## Deployment
 
-### GitHub Pages
-
-This project is configured for easy deployment to GitHub Pages:
-
-```bash
-npm run deploy
-```
-
 ### Docker Deployment
 
 A Docker configuration is included for containerized deployment:
