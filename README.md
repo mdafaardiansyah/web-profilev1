@@ -1,23 +1,52 @@
-# Portfolio Website
+<div align="center">
 
-## Overview
-This is a modern, responsive portfolio website built with React.js. It showcases professional information, skills, projects, education, and experience in an elegant and interactive user interface.
+# 🌟 Portfolio Website
 
-## Features
-- Responsive design that works on all devices
-- Dark theme UI
-- Interactive hero section with typewriter effect
-- Sections for About, Skills, Experience, Projects, and Education
-- Project details modal for showcasing individual projects
-- Smooth scrolling and animations
+*A modern, responsive portfolio website showcasing professional excellence*
 
-## Tech Stack
-- **Frontend Framework**: React.js
-- **Styling**: Styled Components, CSS
-- **Animation Libraries**: Typewriter Effect
-- **Routing**: React Router
-- **UI Components**: Material UI
-- **Deployment**: GitHub Pages
+[![React](https://img.shields.io/badge/React-18.0+-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Styled Components](https://img.shields.io/badge/Styled_Components-DB7093?style=for-the-badge&logo=styled-components&logoColor=white)](https://styled-components.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Jenkins-D33833?style=for-the-badge&logo=jenkins&logoColor=white)](https://www.jenkins.io/)
+
+</div>
+
+---
+
+## 📖 Overview
+
+This is a **modern, responsive portfolio website** built with React.js that showcases professional information, skills, projects, education, and experience in an elegant and interactive user interface. The project implements **DevSecOps best practices** with comprehensive CI/CD pipelines, security scanning, and quality assurance.
+
+## ✨ Features
+
+### 🎨 **User Interface**
+- 📱 **Responsive Design** - Works seamlessly on all devices
+- 🌙 **Dark Theme UI** - Modern and elegant dark interface
+- ⌨️ **Typewriter Effect** - Interactive hero section animation
+- 🎯 **Smooth Navigation** - Seamless scrolling and transitions
+- 🖼️ **Project Modals** - Detailed project showcase with interactive modals
+
+### 🔧 **Technical Excellence**
+- 🚀 **Performance Optimized** - Fast loading and smooth interactions
+- 🛡️ **Security First** - Comprehensive security scanning with Trivy
+- 📊 **Quality Assured** - SonarQube integration for code quality
+- 🔄 **CI/CD Pipeline** - Automated testing, building, and deployment
+- 🐳 **Containerized** - Docker support for consistent deployments
+
+## 🛠️ Tech Stack
+
+<div align="center">
+
+| Category | Technologies |
+|----------|-------------|
+| **Frontend** | ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) |
+| **Styling** | ![Styled Components](https://img.shields.io/badge/Styled_Components-DB7093?style=flat&logo=styled-components&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white) |
+| **UI/UX** | ![Material UI](https://img.shields.io/badge/Material_UI-0081CB?style=flat&logo=mui&logoColor=white) ![React Router](https://img.shields.io/badge/React_Router-CA4245?style=flat&logo=react-router&logoColor=white) |
+| **DevOps** | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-D33833?style=flat&logo=jenkins&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=github-actions&logoColor=white) |
+| **Quality** | ![SonarQube](https://img.shields.io/badge/SonarQube-4E9BCD?style=flat&logo=sonarqube&logoColor=white) ![Trivy](https://img.shields.io/badge/Trivy-1904DA?style=flat&logo=trivy&logoColor=white) |
+| **Deployment** | ![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=flat&logo=github&logoColor=white) ![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat&logo=nginx&logoColor=white) |
+
+</div>
 
 ## Project Structure
 ```
@@ -117,9 +146,45 @@ This project includes CI/CD configurations:
 - GitHub Actions workflow in `.github/workflows/cicd.yml`
 - Jenkins pipeline in `deployments/jenkins/Jenkinsfile`
 
-## Dokumentasi
+## 📚 Documentation Hub
 
-This Project has documentation for technical details and component development:
+<div align="center">
 
-- [Technical Documentation](./DOCUMENTATION.md) - Technical details of the project.
-- [Component Documentation](./COMPONENT_GUIDE.md) - Guide for use the components.
+### 🗂️ **Complete Project Documentation**
+
+</div>
+
+| 📋 Document | 🎯 Purpose | 📖 Description |
+|-------------|------------|----------------|
+| **[📖 Technical Documentation](./DOCUMENTATION.md)** | **Architecture & Implementation** | Comprehensive technical details, component architecture, styling system, and performance optimization strategies |
+| **[🧩 Component Guide](./COMPONENT_GUIDE.md)** | **Development & Customization** | Step-by-step guide for creating, modifying, and extending components with best practices and code examples |
+| **[📝 Changelog](./CHANGELOG.md)** | **Version History & Updates** | Detailed record of all changes, new features, bug fixes, and DevSecOps implementation milestones |
+
+<div align="center">
+
+### 🚀 **Quick Navigation**
+
+[![Technical Docs](https://img.shields.io/badge/📖_Technical_Documentation-4CAF50?style=for-the-badge&logoColor=white)](./DOCUMENTATION.md)
+[![Component Guide](https://img.shields.io/badge/🧩_Component_Guide-2196F3?style=for-the-badge&logoColor=white)](./COMPONENT_GUIDE.md)
+[![Changelog](https://img.shields.io/badge/📝_Changelog-FF9800?style=for-the-badge&logoColor=white)](./CHANGELOG.md)
+
+</div>
+
+---
+
+### 📋 **Documentation Overview**
+
+#### 🏗️ **[Technical Documentation](./DOCUMENTATION.md)**
+> **Perfect for:** Developers, DevOps Engineers, Technical Leads
+> 
+> Dive deep into the technical architecture, component structure, styling system, and performance optimizations. Learn about the build process, deployment strategies, and browser compatibility.
+
+#### 🎨 **[Component Guide](./COMPONENT_GUIDE.md)**
+> **Perfect for:** Frontend Developers, UI/UX Designers, Contributors
+> 
+> Master the art of component development with detailed guides on creating, modifying, and extending components. Includes best practices, responsive design patterns, and theming guidelines.
+
+#### 📈 **[Changelog](./CHANGELOG.md)**
+> **Perfect for:** Project Managers, Stakeholders, Team Members
+> 
+> Track the evolution of the project with detailed version history, feature additions, security enhancements, and DevSecOps implementation milestones.
