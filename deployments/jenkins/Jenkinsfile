@@ -30,9 +30,6 @@ pipeline {
         APP_NAME = 'portfolio'
         DOCKER_IMAGE = "ardidafa/${APP_NAME}"
         IMAGE_TAG = "${params.RELEASE_TAG ? params.RELEASE_TAG : env.BUILD_NUMBER}"
-        
-        // Security
-        TRIVY_CACHE_DIR = '/tmp/trivy-cache'
     }
     
     stages {
@@ -108,24 +105,13 @@ pipeline {
         stage('Security Scan - Container') {
             steps {
                 script {
-                    // Install Trivy if not exists
-                    sh '''
-                        if ! command -v trivy &> /dev/null; then
-                            echo "Installing Trivy..."
-                            wget -qO- https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-                            echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-                            sudo apt-get update
-                            sudo apt-get install trivy -y
-                        fi
-                    '''
-                    
-                    // Create cache directory
-                    sh "mkdir -p ${TRIVY_CACHE_DIR}"
-                    
-                    // Run Trivy scan
+                    // Run Trivy scan using Docker
                     sh """
-                        trivy image \
-                            --cache-dir ${TRIVY_CACHE_DIR} \
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v \$(pwd):/workspace \
+                            -w /workspace \
+                            aquasec/trivy:latest image \
                             --format json \
                             --output trivy-report.json \
                             --severity HIGH,CRITICAL \
@@ -138,9 +124,8 @@ pipeline {
                 }
             }
             post {
-                always {
-                    // Clean up cache if needed
-                    sh "rm -rf ${TRIVY_CACHE_DIR} || true"
+                failure {
+                    echo "Security vulnerabilities found in container image"
                 }
             }
         }
