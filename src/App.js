@@ -15,6 +15,7 @@ import styled, { ThemeProvider } from "styled-components";
 import StarfieldBackground from "./components/StarfieldBackground";
 import CursorTrail from "./components/CursorTrail";
 
+
 const Body = styled.div`
   background-color: ${({ theme }) => theme.bg};
   width: 100%;
@@ -45,32 +46,32 @@ function App() {
   console.log(openModal)
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-      <Router >
-        <StarfieldWrapper>
-          <StarfieldBackground />
-        </StarfieldWrapper>
-        <CursorTrail />
-        <Navbar />
-        <Body>
-          <HeroSection />
-          
-          <Wrapper>
-            <AboutMe />
-            <Skills />
-            <Experience />
-          </Wrapper>
-          <Projects openModal={openModal} setOpenModal={setOpenModal} />
-          <Wrapper>
-            <Education />
-            {/* <Contact /> */}
-          </Wrapper>
-          <Footer />
-          {openModal.state &&
-            <ProjectDetails openModal={openModal} setOpenModal={setOpenModal} />
-          }
-        </Body>
-      </Router>
-    </ThemeProvider>
+        <Router >
+          <StarfieldWrapper>
+            <StarfieldBackground />
+          </StarfieldWrapper>
+          <CursorTrail />
+          <Navbar />
+          <Body>
+            <HeroSection />
+            
+            <Wrapper>
+              <AboutMe />
+              <Skills />
+              <Experience />
+            </Wrapper>
+            <Projects openModal={openModal} setOpenModal={setOpenModal} />
+            <Wrapper>
+              <Education />
+              {/* <Contact /> */}
+            </Wrapper>
+            <Footer />
+            {openModal.state &&
+              <ProjectDetails openModal={openModal} setOpenModal={setOpenModal} />
+            }
+          </Body>
+        </Router>
+      </ThemeProvider>
   );
 }
 

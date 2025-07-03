@@ -11,14 +11,28 @@ pipeline {
     }
 
     environment {
+        // Docker Hub Credentials
         DOCKER_HUB_CREDS = credentials('docker-hub')
         DOCKER_HUB_PAT = credentials('docker-hub-pat')
+        
+        // SonarQube Credentials
+        SONARQUBE_TOKEN = credentials('sonarqube-token')
+        SONARQUBE_URL = credentials('sonarqube-url')
+        
+        // Notification
         DISCORD_WEBHOOK = credentials('discord-notification')
+        
+        // Deployment
         IP_SERVER = credentials('ip-server-kvm2')
         USER_IP = credentials('user-ip-kvm2')
+        
+        // Application
         APP_NAME = 'portfolio'
         DOCKER_IMAGE = "ardidafa/${APP_NAME}"
         IMAGE_TAG = "${params.RELEASE_TAG ? params.RELEASE_TAG : env.BUILD_NUMBER}"
+        
+        // Security
+        TRIVY_CACHE_DIR = '/tmp/trivy-cache'
     }
     
     stages {
@@ -43,7 +57,36 @@ pipeline {
             }
         }
         
-        stage('Security Scan') {
+        stage('Code Quality Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQube Scanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=portfolio-website \
+                            -Dsonar.projectName="Portfolio Website" \
+                            -Dsonar.projectVersion=1.0 \
+                            -Dsonar.sources=src \
+                            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/*.test.js,**/*.spec.js,**/coverage/**,**/public/** \
+                            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                            -Dsonar.host.url=${SONARQUBE_URL} \
+                            -Dsonar.login=${SONARQUBE_TOKEN}
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Security Scan - Dependencies') {
             steps {
                 sh 'npm audit --production || true'
             }
@@ -59,6 +102,46 @@ pipeline {
             steps {
                 // Perhatikan path Dockerfile yang sudah diubah
                 sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest -f deployments/docker/Dockerfile ."
+            }
+        }
+        
+        stage('Security Scan - Container') {
+            steps {
+                script {
+                    // Install Trivy if not exists
+                    sh '''
+                        if ! command -v trivy &> /dev/null; then
+                            echo "Installing Trivy..."
+                            wget -qO- https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+                            echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+                            sudo apt-get update
+                            sudo apt-get install trivy -y
+                        fi
+                    '''
+                    
+                    // Create cache directory
+                    sh "mkdir -p ${TRIVY_CACHE_DIR}"
+                    
+                    // Run Trivy scan
+                    sh """
+                        trivy image \
+                            --cache-dir ${TRIVY_CACHE_DIR} \
+                            --format json \
+                            --output trivy-report.json \
+                            --severity HIGH,CRITICAL \
+                            --exit-code 1 \
+                            ${DOCKER_IMAGE}:${IMAGE_TAG}
+                    """
+                    
+                    // Archive the report
+                    archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+                }
+            }
+            post {
+                always {
+                    // Clean up cache if needed
+                    sh "rm -rf ${TRIVY_CACHE_DIR} || true"
+                }
             }
         }
         
