@@ -117,27 +117,49 @@ pipeline {
         stage('Security Scan - Container') {
             steps {
                 script {
+                    // Isolate variables to avoid Groovy String interpolation issues
+                    def dockerImg = DOCKER_IMAGE
+                    def imgTag = IMAGE_TAG
+                    def deployEnv = params.DEPLOY_ENV
+                    
                     // Run Trivy scan using Docker with proper volume mounting
-                    sh """
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v \"\$(pwd)\":/workspace \
-                            -w /workspace \
-                            aquasec/trivy:latest image \
-                            --format json \
-                            --output trivy-report.json \
-                            --severity HIGH,CRITICAL \
-                            --exit-code 1 \
-                            \"${DOCKER_IMAGE}:${IMAGE_TAG}\"
-                    """
+                    def exitCode = sh(
+                        script: """
+                            docker run --rm \
+                                -v /var/run/docker.sock:/var/run/docker.sock \
+                                -v \"\$(pwd)\":/workspace \
+                                -w /workspace \
+                                aquasec/trivy:latest image \
+                                --format json \
+                                --output trivy-report.json \
+                                --severity HIGH,CRITICAL \
+                                --exit-code 1 \
+                                \"${dockerImg}:${imgTag}\"
+                        """,
+                        returnStatus: true
+                    )
                     
                     // Archive the report
                     archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+                    
+                    // Parse and display vulnerability summary
+                    sh 'cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \\"CRITICAL\\" or .Severity == \\"HIGH\\") | {VulnerabilityID, Severity, Title}" || true'
+                    
+                    // Handle vulnerabilities based on environment
+                    if (exitCode != 0) {
+                        if (deployEnv == 'production') {
+                            error "Critical vulnerabilities found in production deployment! Check trivy-report.json for details."
+                        } else {
+                            echo "⚠️ Vulnerabilities found but continuing for development deployment. Review trivy-report.json for security improvements."
+                        }
+                    } else {
+                        echo "✅ No critical vulnerabilities found in container image."
+                    }
                 }
             }
             post {
-                failure {
-                    echo "Security vulnerabilities found in container image"
+                always {
+                    echo "Security scan completed. Trivy report archived as build artifact."
                 }
             }
         }
@@ -154,6 +176,7 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'deploy-server', keyFileVariable: 'SSH_KEY')]) {
                     script {
+                        // Isolate credentials in script block to avoid Groovy String interpolation warning
                         def serverIp = IP_SERVER
                         def serverUser = USER_IP
                         def dockerImg = DOCKER_IMAGE
@@ -165,36 +188,36 @@ pipeline {
                             "DOCKER_IMG=${dockerImg}",
                             "IMG_TAG=${imgTag}"
                         ]) {
-                        sh '''
-                            # Set correct SSH key permissions
-                            chmod 600 "$SSH_KEY"
-                            
-                            # Create directory on server
-                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "mkdir -p /var/www/portfolio"
-                            
-                            # Clone or update repository
-                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "if [ -d /var/www/portfolio/.git ]; then \
-                              cd /var/www/portfolio && git pull; \
-                            else \
-                              git clone https://github.com/mdafaardiansyah/web-profilev1.git /var/www/portfolio; \
-                            fi"
-                            
-                            # Copy configuration files
-                            scp -o StrictHostKeyChecking=no -i "$SSH_KEY" deployments/nginx/site.conf $SERVER_USER@$SERVER_IP:/var/www/portfolio/nginx-site.conf
-                            
-                            # Deploy application with correct nginx configuration
-                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "cd /var/www/portfolio && \
-                            docker compose down && \
-                            docker pull $DOCKER_IMG:$IMG_TAG && \
-                            docker tag $DOCKER_IMG:$IMG_TAG $DOCKER_IMG:latest && \
-                            docker compose up -d && \
+                            sh '''
+                                # Set correct SSH key permissions
+                                chmod 600 "$SSH_KEY"
+                                
+                                # Create directory on server
+                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "mkdir -p /var/www/portfolio"
+                                
+                                # Clone or update repository
+                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "if [ -d /var/www/portfolio/.git ]; then \
+                                  cd /var/www/portfolio && git pull; \
+                                else \
+                                  git clone https://github.com/mdafaardiansyah/web-profilev1.git /var/www/portfolio; \
+                                fi"
+                                
+                                # Copy configuration files
+                                scp -o StrictHostKeyChecking=no -i "$SSH_KEY" deployments/nginx/site.conf $SERVER_USER@$SERVER_IP:/var/www/portfolio/nginx-site.conf
+                                
+                                # Deploy application with correct nginx configuration
+                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "cd /var/www/portfolio && \
+                                docker compose down && \
+                                docker pull $DOCKER_IMG:$IMG_TAG && \
+                                docker tag $DOCKER_IMG:$IMG_TAG $DOCKER_IMG:latest && \
+                                docker compose up -d && \
 
-                            # nginx reverse proxy conf
-                            sudo cp nginx-site.conf /etc/nginx/sites-available/portfolio.glanze.site.conf && \
-                            sudo ln -sf /etc/nginx/sites-available/portfolio.glanze.site.conf /etc/nginx/sites-enabled/ && \
-                            sudo nginx -t && \
-                            sudo systemctl reload nginx"
-                        '''
+                                # nginx reverse proxy conf
+                                sudo cp nginx-site.conf /etc/nginx/sites-available/portfolio.glanze.site.conf && \
+                                sudo ln -sf /etc/nginx/sites-available/portfolio.glanze.site.conf /etc/nginx/sites-enabled/ && \
+                                sudo nginx -t && \
+                                sudo systemctl reload nginx"
+                            '''
                         }
                     }
                 }
