@@ -37,10 +37,27 @@ pipeline {
             steps {
                 checkout scm
                 script {
+                    // Get git information
+                    env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.GIT_AUTHOR = sh(script: 'git log -1 --pretty=format:"%an"', returnStdout: true).trim()
+                    env.GIT_MESSAGE = sh(script: 'git log -1 --pretty=format:"%s"', returnStdout: true).trim()
+                    
                     discordSend(
                         webhookURL: DISCORD_WEBHOOK,
-                        title: "BUILD STARTED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        description: "Build started for ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        title: "🚀 Build Started!",
+                        description: """**Branch:** `${env.GIT_BRANCH}`
+**Build:** `#${env.BUILD_NUMBER}`
+**Status:** `🔄 In Progress`
+**Commit:** `${env.GIT_COMMIT_SHORT}`
+**Author:** `${env.GIT_AUTHOR}`
+**Message:** `${env.GIT_MESSAGE}`
+
+**🔗 Links:**
+• [View Build](${env.BUILD_URL})
+• [Console Output](${env.BUILD_URL}console)
+• [Pipeline](${env.BUILD_URL}pipeline-graph/)""",
                         link: env.BUILD_URL,
                         result: 'STARTED'
                     )
@@ -149,7 +166,7 @@ pipeline {
                             cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \"CRITICAL\" or .Severity == \"HIGH\") | {VulnerabilityID, Severity, Title}" || true
                         else
                             echo "⚠️ jq not available - displaying raw vulnerability data:"
-                            grep -E '"Severity":\s*"(CRITICAL|HIGH)"' trivy-report.json || echo "No HIGH/CRITICAL vulnerabilities found in JSON format"
+                            grep -E "\"Severity\":[[:space:]]*\"(CRITICAL|HIGH)\"" trivy-report.json || echo "No HIGH/CRITICAL vulnerabilities found in JSON format"
                         fi
                     '''
                     
@@ -245,22 +262,89 @@ pipeline {
     
     post {
         success {
-            discordSend(
-                webhookURL: DISCORD_WEBHOOK,
-                title: "BUILD SUCCESSFUL: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                description: "Build completed successfully for ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                link: env.BUILD_URL,
-                result: 'SUCCESS'
-            )
+            script {
+                // Get artifacts info
+                def artifactsInfo = "No artifacts saved."
+                try {
+                    def artifacts = currentBuild.rawBuild.getArtifacts()
+                    if (artifacts && artifacts.size() > 0) {
+                        artifactsInfo = artifacts.collect { "• ${it.getDisplayPath()}" }.join("\n")
+                    }
+                } catch (Exception e) {
+                    artifactsInfo = "No artifacts saved."
+                }
+                
+                discordSend(
+                    webhookURL: DISCORD_WEBHOOK,
+                    title: "✅ Deploy Success!",
+                    description: """**Branch:** `${env.GIT_BRANCH ?: 'origin/main'}`
+**Build:** `${env.BUILD_NUMBER}`
+**Status:** `✅ Success`
+**Environment:** `${params.DEPLOY_ENV}`
+**Image Tag:** `${IMAGE_TAG}`
+
+**📝 Changes:**
+`${env.GIT_COMMIT_SHORT}` ${env.GIT_MESSAGE} - ${env.GIT_AUTHOR}
+
+**📦 Artifacts:**
+${artifactsInfo}
+
+**🔗 Links:**
+• [View Build](${env.BUILD_URL})
+• [Console Output](${env.BUILD_URL}console)
+• [Test Results](${env.BUILD_URL}testReport/)
+• [Artifacts](${env.BUILD_URL}artifact/)
+• [🌐 Live Site](https://portfolio.glanze.site)
+
+**🐳 Docker Image:**
+`${DOCKER_IMAGE}:${IMAGE_TAG}`
+
+**⏱️ Duration:** `${currentBuild.durationString}`""",
+                    link: env.BUILD_URL,
+                    result: 'SUCCESS'
+                )
+            }
         }
         failure {
-            discordSend(
-                webhookURL: DISCORD_WEBHOOK,
-                title: "BUILD FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                description: "Build failed for ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                link: env.BUILD_URL,
-                result: 'FAILURE'
-            )
+            script {
+                // Get failure stage info
+                def failureStage = "Unknown"
+                try {
+                    def causes = currentBuild.rawBuild.getCauses()
+                    failureStage = currentBuild.rawBuild.getLog(50).join("\n").split("\n").findAll { it.contains("FAILED") }.take(3).join("\n")
+                    if (!failureStage) {
+                        failureStage = "Check console output for details"
+                    }
+                } catch (Exception e) {
+                    failureStage = "Check console output for details"
+                }
+                
+                discordSend(
+                    webhookURL: DISCORD_WEBHOOK,
+                    title: "❌ Build Failed!",
+                    description: """**Branch:** `${env.GIT_BRANCH ?: 'origin/main'}`
+**Build:** `${env.BUILD_NUMBER}`
+**Status:** `❌ Failed`
+**Environment:** `${params.DEPLOY_ENV}`
+
+**📝 Last Commit:**
+`${env.GIT_COMMIT_SHORT}` ${env.GIT_MESSAGE} - ${env.GIT_AUTHOR}
+
+**💥 Failure Info:**
+```
+${failureStage}
+```
+
+**🔗 Links:**
+• [View Build](${env.BUILD_URL})
+• [Console Output](${env.BUILD_URL}console)
+• [Pipeline](${env.BUILD_URL}pipeline-graph/)
+
+**⏱️ Duration:** `${currentBuild.durationString}`""",
+                    link: env.BUILD_URL,
+                    result: 'FAILURE'
+                )
+            }
         }
         always {
             // Clean up Docker images and builder cache
