@@ -91,7 +91,19 @@ pipeline {
         
         stage('Build') {
             steps {
-                sh 'CI=false npm run build'
+                script {
+                    // Clear npm cache
+                    sh 'npm cache clean --force || true'
+                    
+                    // Build dengan optimasi
+                    withEnv([
+                        'NODE_OPTIONS=--max-old-space-size=4096',
+                        'GENERATE_SOURCEMAP=false',
+                        'INLINE_RUNTIME_CHUNK=false'
+                    ]) {
+                        sh 'CI=false npm run build'
+                    }
+                }
             }
         }
         
