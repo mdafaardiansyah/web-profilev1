@@ -97,7 +97,7 @@ pipeline {
                         'NODE_OPTIONS=--max-old-space-size=2048', // Kurangi dari 4GB ke 2GB
                         'GENERATE_SOURCEMAP=false',
                         'INLINE_RUNTIME_CHUNK=false',
-                        'CI=true', // Enable CI optimizations
+                        'CI=false', // Enable CI optimizations
                         'BUILD_PATH=./build'
                     ]) {
                         // Build dengan nice priority (lower CPU priority)
