@@ -92,16 +92,16 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Clear npm cache
-                    sh 'npm cache clean --force || true'
-                    
-                    // Build dengan optimasi
+                    // Limit CPU cores untuk build
                     withEnv([
-                        'NODE_OPTIONS=--max-old-space-size=4096',
+                        'NODE_OPTIONS=--max-old-space-size=2048', // Kurangi dari 4GB ke 2GB
                         'GENERATE_SOURCEMAP=false',
-                        'INLINE_RUNTIME_CHUNK=false'
+                        'INLINE_RUNTIME_CHUNK=false',
+                        'CI=true', // Enable CI optimizations
+                        'BUILD_PATH=./build'
                     ]) {
-                        sh 'CI=false npm run build'
+                        // Build dengan nice priority (lower CPU priority)
+                        sh 'nice -n 10 npm run build'
                     }
                 }
             }
