@@ -148,7 +148,7 @@ pipeline {
                             # Create directory for reports and ensure it's accessible
                             mkdir -p trivy-reports
                             chmod 777 trivy-reports
-                            echo "Created trivy-reports directory at $(pwd)/trivy-reports"
+                            echo "Created trivy-reports directory at \$(pwd)/trivy-reports"
                             
                             # Run Trivy with properly escaped workspace path
                             docker run --rm \
