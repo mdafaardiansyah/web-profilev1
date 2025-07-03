@@ -131,7 +131,7 @@ pipeline {
                                 -w /workspace \
                                 aquasec/trivy:latest image \
                                 --format json \
-                                --output trivy-report.json \
+                                --output /workspace/trivy-report.json \
                                 --severity HIGH,CRITICAL \
                                 --exit-code 1 \
                                 \"${dockerImg}:${imgTag}\"
@@ -142,8 +142,16 @@ pipeline {
                     // Archive the report
                     archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
                     
-                    // Parse and display vulnerability summary
-                    sh 'cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \\"CRITICAL\\" or .Severity == \\"HIGH\\") | {VulnerabilityID, Severity, Title}" || true'
+                    // Parse and display vulnerability summary (check if jq is available)
+                    sh '''
+                        if command -v jq >/dev/null 2>&1; then
+                            echo "📊 Vulnerability Summary:"
+                            cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \"CRITICAL\" or .Severity == \"HIGH\") | {VulnerabilityID, Severity, Title}" || true
+                        else
+                            echo "⚠️ jq not available - displaying raw vulnerability data:"
+                            grep -E '"Severity":\s*"(CRITICAL|HIGH)"' trivy-report.json || echo "No HIGH/CRITICAL vulnerabilities found in JSON format"
+                        fi
+                    '''
                     
                     // Handle vulnerabilities based on environment
                     if (exitCode != 0) {
@@ -174,17 +182,17 @@ pipeline {
         
         stage('Deploy') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'deploy-server', keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'deploy-server', keyFileVariable: 'SSH_KEY'),
+                    string(credentialsId: 'ip-server-kvm2', variable: 'SERVER_IP'),
+                    string(credentialsId: 'user-ip-kvm2', variable: 'SERVER_USER')
+                ]) {
                     script {
-                        // Isolate credentials in script block to avoid Groovy String interpolation warning
-                        def serverIp = IP_SERVER
-                        def serverUser = USER_IP
+                        // Isolate variables to avoid Groovy String interpolation issues
                         def dockerImg = DOCKER_IMAGE
                         def imgTag = IMAGE_TAG
                         
                         withEnv([
-                            "SERVER_IP=${serverIp}", 
-                            "SERVER_USER=${serverUser}",
                             "DOCKER_IMG=${dockerImg}",
                             "IMG_TAG=${imgTag}"
                         ]) {
@@ -193,20 +201,20 @@ pipeline {
                                 chmod 600 "$SSH_KEY"
                                 
                                 # Create directory on server
-                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "mkdir -p /var/www/portfolio"
+                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$SERVER_USER"@"$SERVER_IP" "mkdir -p /var/www/portfolio"
                                 
                                 # Clone or update repository
-                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "if [ -d /var/www/portfolio/.git ]; then \
+                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$SERVER_USER"@"$SERVER_IP" "if [ -d /var/www/portfolio/.git ]; then \
                                   cd /var/www/portfolio && git pull; \
                                 else \
                                   git clone https://github.com/mdafaardiansyah/web-profilev1.git /var/www/portfolio; \
                                 fi"
                                 
                                 # Copy configuration files
-                                scp -o StrictHostKeyChecking=no -i "$SSH_KEY" deployments/nginx/site.conf $SERVER_USER@$SERVER_IP:/var/www/portfolio/nginx-site.conf
+                                scp -o StrictHostKeyChecking=no -i "$SSH_KEY" deployments/nginx/site.conf "$SERVER_USER"@"$SERVER_IP":/var/www/portfolio/nginx-site.conf
                                 
                                 # Deploy application with correct nginx configuration
-                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $SERVER_USER@$SERVER_IP "cd /var/www/portfolio && \
+                                ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$SERVER_USER"@"$SERVER_IP" "cd /var/www/portfolio && \
                                 docker compose down && \
                                 docker pull $DOCKER_IMG:$IMG_TAG && \
                                 docker tag $DOCKER_IMG:$IMG_TAG $DOCKER_IMG:latest && \
