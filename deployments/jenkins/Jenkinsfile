@@ -24,7 +24,6 @@ pipeline {
         
         // Deployment
         IP_SERVER = credentials('ip-server-kvm2')
-        USER_IP = credentials('user-ip-kvm2')
         
         // Application
         APP_NAME = 'portfolio'
@@ -161,12 +160,16 @@ pipeline {
                     
                     // Parse and display vulnerability summary (check if jq is available)
                     sh '''
-                        if command -v jq >/dev/null 2>&1; then
-                            echo "📊 Vulnerability Summary:"
-                            cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \"CRITICAL\" or .Severity == \"HIGH\") | {VulnerabilityID, Severity, Title}" || true
+                        if [ -f "trivy-report.json" ]; then
+                            if command -v jq >/dev/null 2>&1; then
+                                echo "📊 Vulnerability Summary:"
+                                cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \"CRITICAL\" or .Severity == \"HIGH\") | {VulnerabilityID, Severity, Title}" || true
+                            else
+                                echo "⚠️ jq not available - displaying raw vulnerability data:"
+                                grep -E "\"Severity\":[[:space:]]*\"(CRITICAL|HIGH)\"" trivy-report.json || echo "No HIGH/CRITICAL vulnerabilities found in JSON format"
+                            fi
                         else
-                            echo "⚠️ jq not available - displaying raw vulnerability data:"
-                            grep -E "\"Severity\":[[:space:]]*\"(CRITICAL|HIGH)\"" trivy-report.json || echo "No HIGH/CRITICAL vulnerabilities found in JSON format"
+                            echo "⚠️ trivy-report.json not found - scan may have failed"
                         fi
                     '''
                     
