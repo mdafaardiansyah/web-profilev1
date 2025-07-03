@@ -139,15 +139,23 @@ pipeline {
                     def deployEnv = params.DEPLOY_ENV
                     
                     // Run Trivy scan using Docker with proper volume mounting
+                    // Ensure workspace path is properly escaped for Docker volume mounting
+                    def workspacePath = sh(script: 'pwd | tr -d "\n"', returnStdout: true).trim()
+                    echo "Using workspace path: ${workspacePath}"
+                    
                     def exitCode = sh(
                         script: """
+                            # Create directory for reports
+                            mkdir -p trivy-reports
+                            
+                            # Run Trivy with properly escaped workspace path
                             docker run --rm \
                                 -v /var/run/docker.sock:/var/run/docker.sock \
-                                -v \"\$(pwd)\":/workspace \
+                                -v \"${workspacePath}\":/workspace \
                                 -w /workspace \
                                 aquasec/trivy:latest image \
                                 --format json \
-                                --output /workspace/trivy-report.json \
+                                --output trivy-report.json \
                                 --severity HIGH,CRITICAL \
                                 --exit-code 1 \
                                 \"${dockerImg}:${imgTag}\"
@@ -155,21 +163,75 @@ pipeline {
                         returnStatus: true
                     )
                     
-                    // Archive the report
-                    archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+                    // Check if report exists before archiving
+                    sh '''
+                        if [ -f "trivy-report.json" ]; then
+                            echo "✅ Found trivy-report.json, size: $(stat -c%s "trivy-report.json" 2>/dev/null || stat -f%z "trivy-report.json" 2>/dev/null || echo "unknown") bytes"
+                            ls -la trivy-report.json
+                        else
+                            echo "❌ trivy-report.json not found in workspace"
+                            echo "Current directory: $(pwd)"
+                            echo "Directory contents:"
+                            ls -la
+                        fi
+                    '''
+                    
+                    // Archive the report with detailed error handling
+                    script {
+                        def archiveResult = archiveArtifacts(artifacts: 'trivy-report.json', allowEmptyArchive: true)
+                        if (!archiveResult) {
+                            echo "⚠️ Warning: Could not archive trivy-report.json, but continuing pipeline"
+                        }
+                    }
                     
                     // Parse and display vulnerability summary (check if jq is available)
                     sh '''
                         if [ -f "trivy-report.json" ]; then
-                            if command -v jq >/dev/null 2>&1; then
-                                echo "📊 Vulnerability Summary:"
-                                cat trivy-report.json | jq ".Results[]?.Vulnerabilities[]? | select(.Severity == \"CRITICAL\" or .Severity == \"HIGH\") | {VulnerabilityID, Severity, Title}" || true
+                            echo "✅ trivy-report.json found, analyzing vulnerabilities..."
+                            
+                            # Check file size
+                            file_size=$(stat -c%s "trivy-report.json" 2>/dev/null || stat -f%z "trivy-report.json" 2>/dev/null || echo "0")
+                            echo "Report file size: ${file_size} bytes"
+                            
+                            if [ "$file_size" -gt 10 ]; then
+                                if command -v jq >/dev/null 2>&1; then
+                                    echo "📊 Vulnerability Summary (using jq):"
+                                    total_vulns=$(cat trivy-report.json | jq '[.Results[]?.Vulnerabilities[]?] | length' 2>/dev/null || echo "0")
+                                    critical_vulns=$(cat trivy-report.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' 2>/dev/null || echo "0")
+                                    high_vulns=$(cat trivy-report.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' 2>/dev/null || echo "0")
+                                    
+                                    echo "Total vulnerabilities: ${total_vulns}"
+                                    echo "Critical vulnerabilities: ${critical_vulns}"
+                                    echo "High vulnerabilities: ${high_vulns}"
+                                    
+                                    if [ "$critical_vulns" != "0" ] || [ "$high_vulns" != "0" ]; then
+                                        echo "\n🔍 Critical/High Vulnerability Details:"
+                                        cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH") | {VulnerabilityID, Severity, Title}' 2>/dev/null || echo "Error parsing vulnerability details"
+                                    fi
+                                else
+                                    echo "⚠️ jq not available - using grep for basic analysis:"
+                                    critical_count=$(grep -c '"Severity":[[:space:]]*"CRITICAL"' trivy-report.json 2>/dev/null || echo "0")
+                                    high_count=$(grep -c '"Severity":[[:space:]]*"HIGH"' trivy-report.json 2>/dev/null || echo "0")
+                                    
+                                    echo "Critical vulnerabilities found: ${critical_count}"
+                                    echo "High vulnerabilities found: ${high_count}"
+                                    
+                                    if [ "$critical_count" != "0" ] || [ "$high_count" != "0" ]; then
+                                        echo "\n🔍 Sample vulnerability data:"
+                                        grep -A2 -B2 '"Severity":[[:space:]]*"\(CRITICAL\|HIGH\)"' trivy-report.json | head -20 || echo "No detailed vulnerability data found"
+                                    fi
+                                fi
                             else
-                                echo "⚠️ jq not available - displaying raw vulnerability data:"
-                                grep -E "\"Severity\":[[:space:]]*\"(CRITICAL|HIGH)\"" trivy-report.json || echo "No HIGH/CRITICAL vulnerabilities found in JSON format"
+                                echo "⚠️ trivy-report.json is empty or too small (${file_size} bytes)"
+                                echo "Report content preview:"
+                                cat trivy-report.json 2>/dev/null || echo "Cannot read report file"
                             fi
                         else
-                            echo "⚠️ trivy-report.json not found - scan may have failed"
+                            echo "❌ trivy-report.json not found in workspace"
+                            echo "Current directory contents:"
+                            ls -la
+                            echo "\nLooking for any trivy files:"
+                            find . -name "*trivy*" -type f 2>/dev/null || echo "No trivy files found"
                         fi
                     '''
                     
@@ -198,6 +260,29 @@ pipeline {
                 sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
                 sh "docker push ${DOCKER_IMAGE}:latest"
             }
+            post {
+                always {
+                    // Clean up Docker images with proper error handling
+                    sh '''
+                        # List running containers using the image
+                        echo "Checking for running containers using our images..."
+                        RUNNING_CONTAINERS=$(docker ps -q --filter ancestor=${DOCKER_IMAGE}:${IMAGE_TAG} 2>/dev/null || echo "")
+                        
+                        if [ -n "$RUNNING_CONTAINERS" ]; then
+                            echo "Warning: Found running containers using the image. Will not force remove."
+                            docker ps --filter ancestor=${DOCKER_IMAGE}:${IMAGE_TAG}
+                        else
+                            echo "No running containers found for this image. Safe to remove."
+                            # Remove the specific tag with force if needed
+                            docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} -f || echo "Warning: Could not remove ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                        fi
+                        
+                        # Clean up dangling images and build cache
+                        echo "Cleaning up dangling images and build cache..."
+                        docker image prune -f
+                        docker builder prune -f --filter until=24h
+                    '''
+                }
         }
         
         stage('Deploy') {
@@ -350,25 +435,7 @@ ${failureStage}
             }
         }
         always {
-            // Clean up Docker images and builder cache
-            script {
-                def dockerImg = DOCKER_IMAGE
-                def imgTag = IMAGE_TAG
-                
-                withEnv([
-                    "DOCKER_IMG=${dockerImg}", 
-                    "IMG_TAG=${imgTag}"
-                ]) {
-                    sh '''
-                        # Hapus image yang tidak terpakai
-                        docker rmi $DOCKER_IMG:$IMG_TAG || true
-                        docker rmi $DOCKER_IMG:latest || true
-                        
-                        # Bersihkan builder cache untuk mencegah penumpukan storage
-                        docker builder prune -f || true
-                    '''
-                }
-            }
+            echo "Pipeline completed"
         }
     }
 }
