@@ -105,18 +105,18 @@ pipeline {
         stage('Security Scan - Container') {
             steps {
                 script {
-                    // Run Trivy scan using Docker
+                    // Run Trivy scan using Docker with proper volume mounting
                     sh """
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v \$(pwd):/workspace \
+                            -v \"\$(pwd)\":/workspace \
                             -w /workspace \
                             aquasec/trivy:latest image \
                             --format json \
                             --output trivy-report.json \
                             --severity HIGH,CRITICAL \
                             --exit-code 1 \
-                            ${DOCKER_IMAGE}:${IMAGE_TAG}
+                            \"${DOCKER_IMAGE}:${IMAGE_TAG}\"
                     """
                     
                     // Archive the report
@@ -141,12 +141,18 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'deploy-server', keyFileVariable: 'SSH_KEY')]) {
-                    withEnv([
-                        "SERVER_IP=${IP_SERVER}", 
-                        "SERVER_USER=${USER_IP}",
-                        "DOCKER_IMG=${DOCKER_IMAGE}",
-                        "IMG_TAG=${IMAGE_TAG}"
-                    ]) {
+                    script {
+                        def serverIp = IP_SERVER
+                        def serverUser = USER_IP
+                        def dockerImg = DOCKER_IMAGE
+                        def imgTag = IMAGE_TAG
+                        
+                        withEnv([
+                            "SERVER_IP=${serverIp}", 
+                            "SERVER_USER=${serverUser}",
+                            "DOCKER_IMG=${dockerImg}",
+                            "IMG_TAG=${imgTag}"
+                        ]) {
                         sh '''
                             # Set correct SSH key permissions
                             chmod 600 "$SSH_KEY"
@@ -177,6 +183,7 @@ pipeline {
                             sudo nginx -t && \
                             sudo systemctl reload nginx"
                         '''
+                        }
                     }
                 }
             }
@@ -214,18 +221,23 @@ pipeline {
         }
         always {
             // Clean up Docker images and builder cache
-            withEnv([
-                "DOCKER_IMG=${DOCKER_IMAGE}", 
-                "IMG_TAG=${IMAGE_TAG}"
-            ]) {
-                sh '''
-                    # Hapus image yang tidak terpakai
-                    docker rmi $DOCKER_IMG:$IMG_TAG || true
-                    docker rmi $DOCKER_IMG:latest || true
-                    
-                    # Bersihkan builder cache untuk mencegah penumpukan storage
-                    docker builder prune -f || true
-                '''
+            script {
+                def dockerImg = DOCKER_IMAGE
+                def imgTag = IMAGE_TAG
+                
+                withEnv([
+                    "DOCKER_IMG=${dockerImg}", 
+                    "IMG_TAG=${imgTag}"
+                ]) {
+                    sh '''
+                        # Hapus image yang tidak terpakai
+                        docker rmi $DOCKER_IMG:$IMG_TAG || true
+                        docker rmi $DOCKER_IMG:latest || true
+                        
+                        # Bersihkan builder cache untuk mencegah penumpukan storage
+                        docker builder prune -f || true
+                    '''
+                }
             }
         }
     }
