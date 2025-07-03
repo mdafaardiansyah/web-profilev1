@@ -283,6 +283,7 @@ pipeline {
                         docker builder prune -f --filter until=24h
                     '''
                 }
+            }
         }
         
         stage('Deploy') {
