@@ -167,9 +167,9 @@ pipeline {
         
         stage('Docker Push') {
             steps {
-                sh "echo ${DOCKER_HUB_PAT} | docker login -u ardidafa --password-stdin"
-                sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_IMAGE}:latest"
+                sh "echo \${DOCKER_HUB_PAT} | docker login -u ardidafa --password-stdin"
+                sh "docker push \${DOCKER_IMAGE}:\${IMAGE_TAG}"
+                sh "docker push \${DOCKER_IMAGE}:latest"
             }
             post {
                 always {
@@ -177,15 +177,15 @@ pipeline {
                     sh '''
                         # List running containers using the image
                         echo "Checking for running containers using our images..."
-                        RUNNING_CONTAINERS=$(docker ps -q --filter ancestor=${DOCKER_IMAGE}:${IMAGE_TAG} 2>/dev/null || echo "")
+                        RUNNING_CONTAINERS=$(docker ps -q --filter ancestor=$DOCKER_IMAGE:$IMAGE_TAG 2>/dev/null || echo "")
                         
                         if [ -n "$RUNNING_CONTAINERS" ]; then
                             echo "Warning: Found running containers using the image. Will not force remove."
-                            docker ps --filter ancestor=${DOCKER_IMAGE}:${IMAGE_TAG}
+                            docker ps --filter ancestor=$DOCKER_IMAGE:$IMAGE_TAG
                         else
                             echo "No running containers found for this image. Safe to remove."
                             # Remove the specific tag with force if needed
-                            docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG} -f || echo "Warning: Could not remove ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                            docker rmi $DOCKER_IMAGE:$IMAGE_TAG -f || echo "Warning: Could not remove $DOCKER_IMAGE:$IMAGE_TAG"
                         fi
                         
                         # Clean up dangling images and build cache
