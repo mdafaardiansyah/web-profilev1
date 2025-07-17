@@ -148,15 +148,14 @@ pipeline {
                         echo "✅ No HIGH or CRITICAL vulnerabilities found."
                     } else {
                         echo "⚠️ Vulnerabilities found! See details above."
-                        if (deployEnv == 'production') {
+                        if (params.DEPLOY_ENV == 'production') {
                             error "Critical vulnerabilities found in production deployment! Check scan output for details."
                         } else {
                             echo "Continuing for development deployment. Review scan output for security improvements."
                         }
                     }
-                        """,
-
                 }
+            }
             }
             post {
                 always {
