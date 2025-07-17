@@ -156,7 +156,6 @@ pipeline {
                     }
                 }
             }
-            }
             post {
                 always {
                     echo "Security scan completed. Trivy report archived as build artifact."
