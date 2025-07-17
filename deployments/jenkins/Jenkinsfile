@@ -136,130 +136,26 @@ pipeline {
                     // Isolate variables to avoid Groovy String interpolation issues
                     def dockerImg = DOCKER_IMAGE
                     def imgTag = IMAGE_TAG
-                    def deployEnv = params.DEPLOY_ENV
-                    
-                    // Run Trivy scan using Docker with proper volume mounting
-                    // Run Trivy scan using Docker with a dedicated volume for the report
-                    def exitCode = sh(
-                        script: """
-                            # Create directory for reports and ensure it's accessible
-                            mkdir -p trivy-reports
-                            chmod 777 trivy-reports
-                            echo "Created trivy-reports directory at \$(pwd)/trivy-reports"
-                            
-                            # Run Trivy, mounting the reports directory into the container. This is more reliable than mounting the whole workspace.
-                            docker run --rm \
-                                -v /var/run/docker.sock:/var/run/docker.sock \
-                                -v "\$(pwd)/trivy-reports":/reports \
-                                aquasec/trivy:latest image \
-                                --format json \
-                                --output /reports/trivy-report.json \
-                                --severity HIGH,CRITICAL \
-                                --exit-code 1 \
-                                "${dockerImg}:${imgTag}"
-                        """,
-                        returnStatus: true
-                    )
-                    
-                    // Check if report exists in the mounted directory and move it to the workspace root
-                    sh '''
-                        if [ -f "trivy-reports/trivy-report.json" ]; then
-                            echo "✅ Found trivy-report.json in trivy-reports directory."
-                            mv trivy-reports/trivy-report.json .
-                        else
-                            echo "❌ trivy-report.json not found in trivy-reports directory."
-                            echo "trivy-reports directory contents:"
-                            ls -la trivy-reports
-                        fi
-                    '''
-                    
-                    // Archive the report with detailed error handling
-                    script {
-                        sh '''
-                            # Check if trivy-report.json exists and has content
-                            if [ -f "trivy-report.json" ] && [ -s "trivy-report.json" ]; then
-                                echo "✅ Found trivy-report.json for archiving"
-                            else
-                                echo "⚠️ trivy-report.json not found or empty, checking trivy-reports directory"
-                                if [ -d "trivy-reports" ]; then
-                                    echo "Contents of trivy-reports directory:"
-                                    ls -la trivy-reports/
-                                    # If report exists in trivy-reports directory, copy it to workspace root
-                                    if [ -f "trivy-reports/trivy-report.json" ]; then
-                                        cp trivy-reports/trivy-report.json .
-                                        echo "Copied report from trivy-reports directory"
-                                    fi
-                                fi
-                            fi
-                        '''
-                        
-                        def archiveResult = archiveArtifacts(artifacts: 'trivy-report.json', allowEmptyArchive: true)
-                        if (!archiveResult) {
-                            echo "⚠️ Warning: Could not archive trivy-report.json, but continuing pipeline"
-                        }
-                    }
-                    
-                    // Parse and display vulnerability summary (check if jq is available)
-                    sh '''
-                        if [ -f "trivy-report.json" ]; then
-                            echo "✅ trivy-report.json found, analyzing vulnerabilities..."
-                            
-                            # Check file size
-                            file_size=$(stat -c%s "trivy-report.json" 2>/dev/null || stat -f%z "trivy-report.json" 2>/dev/null || echo "0")
-                            echo "Report file size: ${file_size} bytes"
-                            
-                            if [ "$file_size" -gt 10 ]; then
-                                if command -v jq >/dev/null 2>&1; then
-                                    echo "📊 Vulnerability Summary (using jq):"
-                                    total_vulns=$(cat trivy-report.json | jq '[.Results[]?.Vulnerabilities[]?] | length' 2>/dev/null || echo "0")
-                                    critical_vulns=$(cat trivy-report.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' 2>/dev/null || echo "0")
-                                    high_vulns=$(cat trivy-report.json | jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' 2>/dev/null || echo "0")
-                                    
-                                    echo "Total vulnerabilities: ${total_vulns}"
-                                    echo "Critical vulnerabilities: ${critical_vulns}"
-                                    echo "High vulnerabilities: ${high_vulns}"
-                                    
-                                    if [ "$critical_vulns" != "0" ] || [ "$high_vulns" != "0" ]; then
-                                        echo "\n🔍 Critical/High Vulnerability Details:"
-                                        cat trivy-report.json | jq '.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH") | {VulnerabilityID, Severity, Title}' 2>/dev/null || echo "Error parsing vulnerability details"
-                                    fi
-                                else
-                                    echo "⚠️ jq not available - using grep for basic analysis:"
-                                    critical_count=$(grep -c '"Severity":[[:space:]]*"CRITICAL"' trivy-report.json 2>/dev/null || echo "0")
-                                    high_count=$(grep -c '"Severity":[[:space:]]*"HIGH"' trivy-report.json 2>/dev/null || echo "0")
-                                    
-                                    echo "Critical vulnerabilities found: ${critical_count}"
-                                    echo "High vulnerabilities found: ${high_count}"
-                                    
-                                    if [ "$critical_count" != "0" ] || [ "$high_count" != "0" ]; then
-                                        echo "\n🔍 Sample vulnerability data:"
-                                        grep -A2 -B2 '"Severity":[[:space:]]*"CRITICAL"\\|"Severity":[[:space:]]*"HIGH"' trivy-report.json | head -20 || echo "No detailed vulnerability data found"
-                                    fi
-                                fi
-                            else
-                                echo "⚠️ trivy-report.json is empty or too small (${file_size} bytes)"
-                                echo "Report content preview:"
-                                cat trivy-report.json 2>/dev/null || echo "Cannot read report file"
-                            fi
-                        else
-                            echo "❌ trivy-report.json not found in workspace"
-                            echo "Current directory contents:"
-                            ls -la
-                            echo "\nLooking for any trivy files:"
-                            find . -name "*trivy*" -type f 2>/dev/null || echo "No trivy files found"
-                        fi
-                    '''
-                    
-                    // Handle vulnerabilities based on environment
-                    if (exitCode != 0) {
-                        if (deployEnv == 'production') {
-                            error "Critical vulnerabilities found in production deployment! Check trivy-report.json for details."
-                        } else {
-                            echo "⚠️ Vulnerabilities found but continuing for development deployment. Review trivy-report.json for security improvements."
-                        }
+
+                    // Run Trivy scan and capture the output directly
+                    // This approach is simpler and avoids file I/O issues.
+                    def trivyOutput = sh(script: """docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL '${dockerImg}:${imgTag}'""", returnStdout: true).trim()
+                    echo "Trivy Scan Output:"
+                    echo "${trivyOutput}"
+
+                    // Check for vulnerabilities in the output
+                    if (trivyOutput.contains("Total: 0")) {
+                        echo "✅ No HIGH or CRITICAL vulnerabilities found."
                     } else {
-                        echo "✅ No critical vulnerabilities found in container image."
+                        echo "⚠️ Vulnerabilities found! See details above."
+                        if (deployEnv == 'production') {
+                            error "Critical vulnerabilities found in production deployment! Check scan output for details."
+                        } else {
+                            echo "Continuing for development deployment. Review scan output for security improvements."
+                        }
                     }
+                        """,
+
                 }
             }
             post {
@@ -342,8 +238,8 @@ pipeline {
                                 docker compose up -d && \
 
                                 # nginx reverse proxy conf
-                                sudo cp nginx-site.conf /etc/nginx/sites-available/portfolio.glanze.site.conf && \
-                                sudo ln -sf /etc/nginx/sites-available/portfolio.glanze.site.conf /etc/nginx/sites-enabled/ && \
+                                sudo cp nginx-site.conf /etc/nginx/sites-available/glanze.space.conf && \
+                                sudo ln -sf /etc/nginx/sites-available/glanze.space.conf /etc/nginx/sites-enabled/ && \
                                 sudo nginx -t && \
                                 sudo systemctl reload nginx"
                             '''
@@ -359,7 +255,7 @@ pipeline {
                 sh 'sleep 30'
 
                 // Basic health check
-                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://portfolio.glanze.site || true'
+                sh 'curl -k -f -s --retry 10 --retry-connrefused --retry-delay 5 https://glanze.space || true'
             }
         }
     }
@@ -398,7 +294,7 @@ ${artifactsInfo}
 • [Console Output](${env.BUILD_URL}console)
 • [Test Results](${env.BUILD_URL}testReport/)
 • [Artifacts](${env.BUILD_URL}artifact/)
-• [🌐 Live Site](https://portfolio.glanze.site)
+• [🌐 Live Site](https://glanze.space)
 
 **🐳 Docker Image:**
 `${DOCKER_IMAGE}:${IMAGE_TAG}`

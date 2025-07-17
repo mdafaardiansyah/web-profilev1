@@ -89,4 +89,4 @@
 #      - name: Deployment Status
 #        run: |
 #          echo "Deployment completed successfully!"
-#          echo "Application URL: https://portfolio.glanze.site"
+#          echo "Application URL: https://glanze.space"
