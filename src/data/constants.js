@@ -17,7 +17,7 @@ export const Bio = {
   resume:
     "https://drive.google.com/file/d/1L1WRo-UKQrfTwc2_ZR9UQUDoCRJ3bN_7/view?usp=sharing",
   linkedin: "https://www.linkedin.com/in/mdafaardiansyah",
-  // twitter: "https://twitter.com/",
+  twitter: "https://x.com/ardidafaaa/status/1960973671163404663",
   insta: "https://www.instagram.com/ardidafa21/",
   // facebook: "https://www.facebook.com/",
 };
@@ -659,3 +659,22 @@ export const TimeLineData = [
   { year: 2020, text: "Shared my projects with the world" },
   { year: 2021, text: "Started my own platform" },
 ];
+
+// Daily Tweets Configuration - Separate module for Twitter feed management
+export const DailyTweets = {
+  // Featured tweet URL for daily display
+  featuredTweet: "https://x.com/ardidafaaa/status/1960973671163404663",
+  
+  // Array of tweet URLs for rotation or multiple displays
+  tweetUrls: [
+    "https://x.com/ardidafaaa/status/1960973671163404663",
+    // Add more tweet URLs here for rotation
+  ],
+  
+  // Configuration options
+  config: {
+    autoRefresh: false,
+    displayCount: 1,
+    theme: "light"
+  }
+};

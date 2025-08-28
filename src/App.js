@@ -10,6 +10,7 @@ import Projects from "./components/Projects";
 import Footer from "./components/Footer";
 import Experience from "./components/Experience";
 import Education from "./components/Education";
+import TwitterFeed from "./components/TwitterFeed";
 import ProjectDetails from "./components/ProjectDetails";
 import styled, { ThemeProvider } from "styled-components";
 import StarfieldBackground from "./components/StarfieldBackground";
@@ -63,6 +64,7 @@ function App() {
             <Projects openModal={openModal} setOpenModal={setOpenModal} />
             <Wrapper>
               <Education />
+              <TwitterFeed />
               {/* <Contact /> */}
             </Wrapper>
             <Footer />
