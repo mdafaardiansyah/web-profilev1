@@ -663,11 +663,11 @@ export const TimeLineData = [
 // Daily Tweets Configuration - Separate module for Twitter feed management
 export const DailyTweets = {
   // Featured tweet URL for daily display
-  featuredTweet: "https://x.com/ardidafaaa/status/1960973671163404663",
+  featuredTweet: "https://x.com/ardidafaaa/status/1961022650194743749",
   
   // Array of tweet URLs for rotation or multiple displays
   tweetUrls: [
-    "https://x.com/ardidafaaa/status/1960973671163404663",
+    "https://x.com/ardidafaaa/status/1961022650194743749",
     // Add more tweet URLs here for rotation
   ],
   
