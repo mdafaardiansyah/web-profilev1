@@ -108,7 +108,7 @@ pipeline {
                                     elif command -v docker >/dev/null 2>&1; then
                                          echo "Using Docker to run SonarQube Scanner..."
                                          docker run --rm \
-                                             -v "\$(pwd):/usr/src" \
+                                             -v "\${WORKSPACE}:/usr/src" \
                                              -w /usr/src \
                                              sonarsource/sonar-scanner-cli:latest \
                                              -Dsonar.projectKey=portfolio-website \
