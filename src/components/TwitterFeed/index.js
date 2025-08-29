@@ -16,7 +16,7 @@ const TwitterFeed = () => {
             <Wrapper>
                 <Title>Latest Updates</Title>
                 <Desc>
-                    Ikuti update terbaru dan pemikiran menarik dari dunia teknologi
+                    Follow my post and get updates about my latest projects and articles on X.
                 </Desc>
                 
                 <TwitterSection>
