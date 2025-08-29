@@ -17,7 +17,7 @@ export const Bio = {
   resume:
     "https://drive.google.com/file/d/1L1WRo-UKQrfTwc2_ZR9UQUDoCRJ3bN_7/view?usp=sharing",
   linkedin: "https://www.linkedin.com/in/mdafaardiansyah",
-  twitter: "https://x.com/ardidafaaa/status/1960973671163404663",
+  twitter: "https://x.com/ardidafaaa",
   insta: "https://www.instagram.com/ardidafa21/",
   // facebook: "https://www.facebook.com/",
 };
