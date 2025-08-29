@@ -29,23 +29,23 @@ export const Container = styled.div`
     position: relative;
     z-index: 1;
     align-items: center;
-    padding: 60px 0px;
+    padding: 30px 0px;
     background: ${({ theme }) => theme.bg};
     
     @media (max-width: 960px) {
-        padding: 40px 0px;
+        padding: 25px 0px;
     }
     
     @media (max-width: 768px) {
-        padding: 35px 0px;
+        padding: 20px 0px;
     }
     
     @media (max-width: 480px) {
-        padding: 30px 0px;
+        padding: 15px 0px;
     }
     
     @media (max-width: 320px) {
-        padding: 25px 0px;
+        padding: 12px 0px;
     }
 `;
 
@@ -57,27 +57,27 @@ export const Wrapper = styled.div`
     flex-direction: column;
     width: 100%;
     max-width: 1350px;
-    padding: 40px 20px;
-    gap: 20px;
+    padding: 20px 20px;
+    gap: 15px;
     
     @media (max-width: 1024px) {
         max-width: 1000px;
-        padding: 35px 18px;
-        gap: 18px;
+        padding: 18px 18px;
+        gap: 14px;
     }
     
     @media (max-width: 960px) {
-        padding: 30px 15px;
-        gap: 15px;
-    }
-    
-    @media (max-width: 768px) {
-        padding: 25px 12px;
+        padding: 15px 15px;
         gap: 12px;
     }
     
+    @media (max-width: 768px) {
+        padding: 12px 12px;
+        gap: 10px;
+    }
+    
     @media (max-width: 480px) {
-        padding: 20px 10px;
+        padding: 10px 10px;
         gap: 10px;
     }
     
@@ -92,29 +92,29 @@ export const Title = styled.div`
     font-size: 42px;
     text-align: center;
     font-weight: 600;
-    margin-top: 20px;
+    margin-top: 10px;
     color: ${({ theme }) => theme.text_primary};
     animation: ${fadeIn} 0.8s ease-out;
     line-height: 1.2;
     
     @media (max-width: 1024px) {
         font-size: 38px;
-        margin-top: 18px;
+        margin-top: 8px;
     }
     
     @media (max-width: 768px) {
-        margin-top: 15px;
+        margin-top: 6px;
         font-size: 32px;
     }
     
     @media (max-width: 480px) {
         font-size: 28px;
-        margin-top: 12px;
+        margin-top: 5px;
     }
     
     @media (max-width: 320px) {
         font-size: 24px;
-        margin-top: 10px;
+        margin-top: 4px;
     }
 `;
 
@@ -152,40 +152,40 @@ export const Desc = styled.div`
 export const TwitterSection = styled.div`
     width: 100%;
     max-width: 650px;
-    margin-top: 40px;
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 30px;
+    gap: 20px;
     animation: ${fadeIn} 0.8s ease-out 0.4s both;
-    padding: 20px;
+    padding: 15px;
     
     @media (max-width: 1024px) {
         max-width: 600px;
-        gap: 25px;
-        padding: 18px;
-        margin-top: 35px;
+        gap: 18px;
+        padding: 14px;
+        margin-top: 18px;
     }
     
     @media (max-width: 768px) {
         max-width: 550px;
-        gap: 20px;
-        padding: 15px;
-        margin-top: 30px;
+        gap: 15px;
+        padding: 12px;
+        margin-top: 15px;
     }
     
     @media (max-width: 480px) {
         max-width: 100%;
-        gap: 15px;
-        padding: 12px;
-        margin-top: 25px;
+        gap: 12px;
+        padding: 10px;
+        margin-top: 12px;
     }
     
     @media (max-width: 320px) {
-        gap: 12px;
-        padding: 10px;
-        margin-top: 20px;
+        gap: 10px;
+        padding: 8px;
+        margin-top: 10px;
     }
 `;
 
@@ -295,11 +295,11 @@ export const TwitterContainer = styled.div`
     min-height: 400px;
     background: ${({ theme }) => theme.card};
     border-radius: 16px;
-    padding: 30px;
+    padding: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    border: 1px solid ${({ theme }) => theme.card_light || theme.card};
+    border: 1px solid ${({ theme }) => theme.border};
     transition: all 0.3s ease;
-    margin: 20px 0;
+    margin: 10px 0;
     position: relative;
     overflow: hidden;
     
