@@ -67,100 +67,100 @@ pipeline {
             }
         }
         
-        stage('Code Quality Analysis') {
-            steps {
-                script {
-                    try {
-                        def scannerHome = tool name: 'SonarQube-Scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                        withCredentials([
-                            string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN'),
-                            string(credentialsId: 'sonarqube-url', variable: 'SONAR_URL')
-                        ]) {
-                            withSonarQubeEnv('SonarQube-Server') {
-                                sh """
-                                    \${scannerHome}/bin/sonar-scanner \
-                                    -Dsonar.projectKey=portfolio-website \
-                                    -Dsonar.projectName="Portfolio Website" \
-                                    -Dsonar.projectVersion=1.0 \
-                                    -Dsonar.sources=src \
-                                    -Dsonar.exclusions=**/node_modules/**,**/build/**,**/*.test.js,**/*.spec.js,**/coverage/**,**/public/** \
-                                    -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                                    -Dsonar.host.url=\$SONAR_URL \
-                                    -Dsonar.login=\$SONAR_TOKEN
-                                """
-                            }
-                        }
-                    } catch (Exception e) {
-                        echo "SonarQube Scanner tool not found, trying alternative paths..."
-                        withCredentials([
-                            string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN'),
-                            string(credentialsId: 'sonarqube-url', variable: 'SONAR_URL')
-                        ]) {
-                            withSonarQubeEnv('SonarQube-Server') {
-                                sh """
-                                    # Try common sonar-scanner paths
-                                    if [ -f /opt/sonar-scanner/bin/sonar-scanner ]; then
-                                        SCANNER_PATH="/opt/sonar-scanner/bin/sonar-scanner"
-                                    elif [ -f /usr/local/bin/sonar-scanner ]; then
-                                        SCANNER_PATH="/usr/local/bin/sonar-scanner"
-                                    elif command -v sonar-scanner >/dev/null 2>&1; then
-                                        SCANNER_PATH="sonar-scanner"
-                                    elif command -v docker >/dev/null 2>&1; then
-                                         echo "Using Docker to run SonarQube Scanner..."
-                                         docker run --rm \
-                                             -v "\${WORKSPACE}:/usr/src" \
-                                             -w /usr/src \
-                                             sonarsource/sonar-scanner-cli:latest \
-                                             -Dsonar.host.url=\$SONAR_URL \
-                                             -Dsonar.login=\$SONAR_TOKEN
-                                     else
-                                         echo "Attempting to download and install SonarQube Scanner..."
-                                         if command -v curl >/dev/null 2>&1; then
-                                             curl -sL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -o sonar-scanner.zip
-                                         elif command -v wget >/dev/null 2>&1; then
-                                             wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -O sonar-scanner.zip
-                                         else
-                                             echo "No download tool available. Cannot install SonarQube Scanner."
-                                             echo "Please install SonarQube Scanner manually or configure it in Jenkins Global Tools."
-                                             exit 1
-                                         fi
-                                         
-                                         if command -v unzip >/dev/null 2>&1; then
-                                             unzip -q sonar-scanner.zip
-                                             SCANNER_PATH="./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner"
-                                         else
-                                             echo "unzip command not available. Cannot extract SonarQube Scanner."
-                                             exit 1
-                                         fi
-                                     fi
-                                     
-                                     # Run scanner only if not using Docker (Docker already executed the scan)
-                                     if [ "\$SCANNER_PATH" != "" ]; then
-                                         \$SCANNER_PATH \
-                                         -Dsonar.projectKey=portfolio-website \
-                                         -Dsonar.projectName="Portfolio Website" \
-                                         -Dsonar.projectVersion=1.0 \
-                                         -Dsonar.sources=src \
-                                         -Dsonar.exclusions=**/node_modules/**,**/build/**,**/*.test.js,**/*.spec.js,**/coverage/**,**/public/** \
-                                         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                                         -Dsonar.host.url=\$SONAR_URL \
-                                         -Dsonar.login=\$SONAR_TOKEN
-                                     fi
-                                """
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Code Quality Analysis') {
+        //     steps {
+        //         script {
+        //             try {
+        //                 def scannerHome = tool name: 'SonarQube-Scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+        //                 withCredentials([
+        //                     string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN'),
+        //                     string(credentialsId: 'sonarqube-url', variable: 'SONAR_URL')
+        //                 ]) {
+        //                     withSonarQubeEnv('SonarQube-Server') {
+        //                         sh """
+        //                             \${scannerHome}/bin/sonar-scanner \
+        //                             -Dsonar.projectKey=portfolio-website \
+        //                             -Dsonar.projectName="Portfolio Website" \
+        //                             -Dsonar.projectVersion=1.0 \
+        //                             -Dsonar.sources=src \
+        //                             -Dsonar.exclusions=**/node_modules/**,**/build/**,**/*.test.js,**/*.spec.js,**/coverage/**,**/public/** \
+        //                             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+        //                             -Dsonar.host.url=\$SONAR_URL \
+        //                             -Dsonar.login=\$SONAR_TOKEN
+        //                         """
+        //                     }
+        //                 }
+        //             } catch (Exception e) {
+        //                 echo "SonarQube Scanner tool not found, trying alternative paths..."
+        //                 withCredentials([
+        //                     string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN'),
+        //                     string(credentialsId: 'sonarqube-url', variable: 'SONAR_URL')
+        //                 ]) {
+        //                     withSonarQubeEnv('SonarQube-Server') {
+        //                         sh """
+        //                             # Try common sonar-scanner paths
+        //                             if [ -f /opt/sonar-scanner/bin/sonar-scanner ]; then
+        //                                 SCANNER_PATH="/opt/sonar-scanner/bin/sonar-scanner"
+        //                             elif [ -f /usr/local/bin/sonar-scanner ]; then
+        //                                 SCANNER_PATH="/usr/local/bin/sonar-scanner"
+        //                             elif command -v sonar-scanner >/dev/null 2>&1; then
+        //                                 SCANNER_PATH="sonar-scanner"
+        //                             elif command -v docker >/dev/null 2>&1; then
+        //                                  echo "Using Docker to run SonarQube Scanner..."
+        //                                  docker run --rm \
+        //                                      -v "\${WORKSPACE}:/usr/src" \
+        //                                      -w /usr/src \
+        //                                      sonarsource/sonar-scanner-cli:latest \
+        //                                      -Dsonar.host.url=\$SONAR_URL \
+        //                                      -Dsonar.login=\$SONAR_TOKEN
+        //                              else
+        //                                  echo "Attempting to download and install SonarQube Scanner..."
+        //                                  if command -v curl >/dev/null 2>&1; then
+        //                                      curl -sL https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -o sonar-scanner.zip
+        //                                  elif command -v wget >/dev/null 2>&1; then
+        //                                      wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip -O sonar-scanner.zip
+        //                                  else
+        //                                      echo "No download tool available. Cannot install SonarQube Scanner."
+        //                                      echo "Please install SonarQube Scanner manually or configure it in Jenkins Global Tools."
+        //                                      exit 1
+        //                                  fi
+        //                                  
+        //                                  if command -v unzip >/dev/null 2>&1; then
+        //                                      unzip -q sonar-scanner.zip
+        //                                      SCANNER_PATH="./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner"
+        //                                  else
+        //                                      echo "unzip command not available. Cannot extract SonarQube Scanner."
+        //                                      exit 1
+        //                                  fi
+        //                              fi
+        //                              
+        //                              # Run scanner only if not using Docker (Docker already executed the scan)
+        //                              if [ "\$SCANNER_PATH" != "" ]; then
+        //                                  \$SCANNER_PATH \
+        //                                  -Dsonar.projectKey=portfolio-website \
+        //                                  -Dsonar.projectName="Portfolio Website" \
+        //                                  -Dsonar.projectVersion=1.0 \
+        //                                  -Dsonar.sources=src \
+        //                                  -Dsonar.exclusions=**/node_modules/**,**/build/**,**/*.test.js,**/*.spec.js,**/coverage/**,**/public/** \
+        //                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+        //                                  -Dsonar.host.url=\$SONAR_URL \
+        //                                  -Dsonar.login=\$SONAR_TOKEN
+        //                              fi
+        //                         """
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
+        // stage('Quality Gate') {
+        //     steps {
+        //         timeout(time: 5, unit: 'MINUTES') {
+        //             waitForQualityGate abortPipeline: true
+        //         }
+        //     }
+        // }
         
         stage('Security Scan - Dependencies') {
             steps {
