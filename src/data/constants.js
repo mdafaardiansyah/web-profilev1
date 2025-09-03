@@ -603,7 +603,7 @@ export const projects = [
     ],
     category: "web app",
     github: "https://github.com/mdafaardiansyah/backend-gopatungan",
-    webapp: "https://api.gopatungan.glanze.site",
+    webapp: "https://api.gopatungan.glanze.space",
   },
   {
     id: 14,
@@ -634,7 +634,7 @@ export const projects = [
     description:
         "Chills Apps is Streaming Apps - Back End",
     image:
-        "https://firebasestorage.googleapis.com/v0/b/portfolioweb-b5005.appspot.com/o/ProjectImages%2FChills-BE.png?alt=media&token=8c5a41dc-c868-451a-84c9-0ea502ff8c60",
+        "https://firebasestorage.googleapis.com/v0/b/portfolioweb-b5005.appspot.com/o/ProjectImages%2FChills-FE.png?alt=media&token=8c5a41dc-c868-451a-84c9-0ea502ff8c60",
     tags: [
       "Golang",
       "Backend",

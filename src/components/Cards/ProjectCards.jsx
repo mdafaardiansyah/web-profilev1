@@ -145,7 +145,10 @@ const ProjectCards = ({project,setOpenModal}) => {
                     <Avatar key={index} src={member.img}/>
                 ))}
             </Members>
-            {/* <Button>View Project</Button> */}
+            {project?.webapp && <Button onClick={(e) => {
+                e.stopPropagation();
+                window.open(project.webapp, '_blank');
+            }}>View Demo</Button>}
         </Card>
     )
 }
