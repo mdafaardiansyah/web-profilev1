@@ -374,20 +374,22 @@ export const education = [
 export const projects = [
   {
     id: 9,
-    title: "Sidica",
-    date: "Jun 2022 - Jul 2022",
+    title: "OpenMusic API",
+    date: "Aug 2025 - Sep 2025",
     description:
-      "Sidica is Simple Weather Forecasting made from ReactJS with typescript, Tailwind, and Axios to consume API",
+      "OpenMusic API is a RESTful API for music streaming service, made with NodeJS, Express, and PostgreSQL",
     image:
-      "https://firebasestorage.googleapis.com/v0/b/portfolioweb-b5005.appspot.com/o/ProjectImages%2FProjectSidica.png?alt=media&token=465e673f-10ed-4c6d-89b6-b1ee23f3d818",
+      "https://firebasestorage.googleapis.com/v0/b/portfolioweb-b5005.appspot.com/o/ProjectImages%2FScreenshot%202025-09-03%20183212.png?alt=media&token=1b38a060-921d-4ae8-a7d3-a3630df00408",
     tags: [
       "Eslint",
-      "React Js",
-      "Typescript",
-      "Tailwind",
+      "NodeJS",
+      "Hapi",
+      "PostgreSQL",
+      "JWT",
     ],
     category: "web app",
-    github: "https://github.com/mdafaardiansyah/sidica-spa-reactjs",
+    github: "https://github.com/mdafaardiansyah/Dicoding-Proyek-OpenMusic-API",
+    webapp: "https://api-openmusic.glanze.space",
   },
   {
     id: 0,
@@ -603,6 +605,49 @@ export const projects = [
     github: "https://github.com/mdafaardiansyah/backend-gopatungan",
     webapp: "https://api.gopatungan.glanze.site",
   },
+  {
+    id: 14,
+    title: "Chills Streaming App - Front End",
+    date: "Mar 2025 - Jun 2025",
+    description:
+        "Chills Apps is Streaming Apps - Front End",
+    image:
+        "https://firebasestorage.googleapis.com/v0/b/portfolioweb-b5005.appspot.com/o/ProjectImages%2FChills-FE.png?alt=media&token=8c5a41dc-c868-451a-84c9-0ea502ff8c60",
+    tags: [
+      "React Js",
+      "Redux",
+      "React Router",
+      "Tailwind CSS",
+      "CSS",
+      "HTML",
+      "JavaScript",
+      "TypeScript",
+    ],
+    category: "web app",
+    github: "https://github.com/mdafaardiansyah/chill-movie-apps-3",
+    webapp: "https://hsba2b-chill.glanze.space/home",
+  },
+  {
+    id: 15,
+    title: "Chills Streaming App - Back End",
+    date: "Jun 2025 - Jul 2025",
+    description:
+        "Chills Apps is Streaming Apps - Back End",
+    image:
+        "https://firebasestorage.googleapis.com/v0/b/portfolioweb-b5005.appspot.com/o/ProjectImages%2FChills-BE.png?alt=media&token=8c5a41dc-c868-451a-84c9-0ea502ff8c60",
+    tags: [
+      "Golang",
+      "Backend",
+      "Swagger",
+      "CI/CD",
+      "Gin",
+      "GORM",
+    ],
+    category: "web app",
+    github: "https://github.com/mdafaardiansyah/hsb-fsd_chills_api_backend-a1b",
+  },
+  
+
   // {
   //   id: 0,
   //   title: "Podstream",
